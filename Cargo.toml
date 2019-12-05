@@ -5,7 +5,7 @@ authors = ["tarkah <admin@tarkah.dev>"]
 edition = "2018"
 
 [dependencies]
-stats-api = { path = "../nhl-notifier/stats_api" }
+stats-api = { git = "https://github.com/tarkah/stats-api", rev = "8220f3e3d16431d0c8be874463675a66645fc003" }
 
 failure = "0.1"
 log = "0.4"
