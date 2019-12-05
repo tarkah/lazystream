@@ -21,6 +21,10 @@ fn main() -> Result<(), Error> {
         };
     });
 
+    if cfg!(target_os = "windows") {
+        pause();
+    }
+
     Ok(())
 }
 
@@ -97,4 +101,19 @@ fn log_error(e: &Error) {
     for cause in e.iter_causes() {
         error!("Caused by: {}", cause);
     }
+}
+
+// Keep console window open until button press
+fn pause() {
+    use std::io::{self, prelude::*};
+
+    let mut stdin = io::stdin();
+    let mut stdout = io::stdout();
+
+    // We want the cursor to stay at the end of the line, so we print without a newline and flush manually.
+    write!(stdout, "\nPress enter or close window to exit...").unwrap();
+    stdout.flush().unwrap();
+
+    // Read a single byte and discard
+    let _ = stdin.read(&mut [0u8]).unwrap();
 }
