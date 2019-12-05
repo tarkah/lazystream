@@ -39,15 +39,15 @@ async fn run() -> Result<(), Error> {
     println!("\nPick a game...\n");
     for (idx, game) in todays_schedule.games.iter().enumerate() {
         println!(
-            "{}) {} vs. {} @ {}",
+            "{}) {} - {} @ {}",
             idx + 1,
-            game.teams.home.detail.name,
-            game.teams.away.detail.name,
             game.date
                 .with_timezone(&Local)
                 .time()
                 .format("%-I:%M %p")
-                .to_string()
+                .to_string(),
+            game.teams.away.detail.name,
+            game.teams.home.detail.name
         );
     }
 

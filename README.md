@@ -14,15 +14,15 @@ _____|_/    _\____|   _| _____/  _|  _| \_\_____|_/    _\_|  _|
 
 Pick a game...
 
-1) Boston Bruins vs. Chicago Blackhawks @ 4:00 PM
-2) MontrÃ©al Canadiens vs. Colorado Avalanche @ 4:00 PM
-3) Tampa Bay Lightning vs. Minnesota Wild @ 4:00 PM
-4) New York Islanders vs. Vegas Golden Knights @ 4:00 PM
-5) Philadelphia Flyers vs. Arizona Coyotes @ 4:00 PM
-6) Carolina Hurricanes vs. San Jose Sharks @ 4:00 PM
-7) Columbus Blue Jackets vs. New York Rangers @ 4:00 PM
-8) Dallas Stars vs. Winnipeg Jets @ 5:30 PM
-9) Calgary Flames vs. Buffalo Sabres @ 6:00 PM
+1) 4:00 PM - Chicago Blackhawks @ Boston Bruins
+2) 4:00 PM - Colorado Avalanche @ MontrÃ©al Canadiens
+3) 4:00 PM - Minnesota Wild @ Tampa Bay Lightning
+4) 4:00 PM - Vegas Golden Knights @ New York Islanders
+5) 4:00 PM - Arizona Coyotes @ Philadelphia Flyers
+6) 4:00 PM - San Jose Sharks @ Carolina Hurricanes
+7) 4:00 PM - New York Rangers @ Columbus Blue Jackets
+8) 5:30 PM - Winnipeg Jets @ Dallas Stars
+9) 6:00 PM - Buffalo Sabres @ Calgary Flames
 
 >>> 4
 
