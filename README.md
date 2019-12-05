@@ -1,4 +1,5 @@
 # LazyStream
+[![Build Status](https://dev.azure.com/tarkah/lazystream/_apis/build/status/tarkah.lazystream?branchName=master)](https://dev.azure.com/tarkah/lazystream/_build/latest?definitionId=11&branchName=master)
 
 Easily get stream links for the current days NHL schedule
 
