@@ -1,0 +1,166 @@
+trigger:
+  branches:
+    include: ["master", "azure-pipelines"]
+  tags:
+    include: ["*"]
+
+jobs:
+  - job: "Clippy"
+    condition: not(startsWith(variables['Build.SourceBranch'], 'refs/tags/'))
+    strategy:
+      matrix:
+        windows-stable:
+          imageName: "vs2017-win2016"
+          rustup_toolchain: 1.39.0
+        linux-stable:
+          imageName: "ubuntu-latest"
+          rustup_toolchain: 1.39.0
+
+    pool:
+      vmImage: $(imageName)
+
+    steps:
+      - script: |
+          curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain $RUSTUP_TOOLCHAIN
+          echo "##vso[task.setvariable variable=PATH;]$PATH:$HOME/.cargo/bin"
+        displayName: Linux Install Rust
+        condition: ne( variables['Agent.OS'], 'Windows_NT' )
+      - script: |
+          curl -sSf -o rustup-init.exe https://win.rustup.rs
+          rustup-init.exe -y --default-toolchain %RUSTUP_TOOLCHAIN%
+          echo "##vso[task.setvariable variable=PATH;]%PATH%;%USERPROFILE%\.cargo\bin"
+        displayName: Windows Install Rust
+        condition: eq( variables['Agent.OS'], 'Windows_NT' )
+      - script: rustup component add clippy
+        displayName: Install Clippy
+      - script: cargo clippy --all
+        displayName: Run Clippy
+
+  - job: "Test"
+    condition: not(startsWith(variables['Build.SourceBranch'], 'refs/tags/'))
+    strategy:
+      matrix:
+        windows-stable:
+          imageName: "vs2017-win2016"
+          rustup_toolchain: 1.39.0
+          target: "x86_64-pc-windows-msvc"
+        linux-stable:
+          imageName: "ubuntu-latest"
+          rustup_toolchain: 1.39.0
+          target: "x86_64-unknown-linux-gnu"
+
+    pool:
+      vmImage: $(imageName)
+
+    steps:
+      - script: |
+          curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain $RUSTUP_TOOLCHAIN
+          echo "##vso[task.setvariable variable=PATH;]$PATH:$HOME/.cargo/bin"
+        displayName: Linux Install Rust
+        condition: ne( variables['Agent.OS'], 'Windows_NT' )
+      - script: |
+          curl -sSf -o rustup-init.exe https://win.rustup.rs
+          rustup-init.exe -y --default-toolchain %RUSTUP_TOOLCHAIN%
+          echo "##vso[task.setvariable variable=PATH;]%PATH%;%USERPROFILE%\.cargo\bin"
+        displayName: Windows Install Rust
+        condition: eq( variables['Agent.OS'], 'Windows_NT' )
+      - script: cargo build --all
+        displayName: Cargo Build
+      - script: cargo test --all
+        displayName: Cargo Test
+
+  - job: "Release"
+    timeoutInMinutes: 0
+    condition: startsWith(variables['Build.SourceBranch'], 'refs/tags/')
+    strategy:
+      matrix:
+        windows-stable:
+          imageName: "vs2017-win2016"
+          rustup_toolchain: 1.39.0
+          target: "x86_64-pc-windows-msvc"
+          docker: false
+        linux-stable:
+          imageName: "ubuntu-latest"
+          rustup_toolchain: 1.39.0
+          target: "x86_64-unknown-linux-gnu"
+          docker: false
+
+    pool:
+      vmImage: $(imageName)
+
+    steps:
+      - bash: |
+          DATE="$(date +%Y-%m-%d)"
+          echo "##vso[task.setvariable variable=build.date]$DATE"
+        displayName: Create Date Variable
+      - bash: |
+          MY_TAG="$(Build.SourceBranch)"
+          MY_TAG=${MY_TAG#refs/tags/}
+          echo $MY_TAG
+          echo "##vso[task.setvariable variable=build.my_tag]$MY_TAG"
+        displayName: Create Tag Variable
+
+      - script: |
+          curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain $RUSTUP_TOOLCHAIN
+          echo "##vso[task.setvariable variable=PATH;]$PATH:$HOME/.cargo/bin"
+        displayName: Linux Install Rust
+        condition: and( ne( variables['Agent.OS'], 'Windows_NT' ), eq( variables['docker'], 'false' ))
+      - script: |
+          curl -sSf -o rustup-init.exe https://win.rustup.rs
+          rustup-init.exe -y --default-toolchain %RUSTUP_TOOLCHAIN%
+          echo "##vso[task.setvariable variable=PATH;]%PATH%;%USERPROFILE%\.cargo\bin"
+        displayName: Windows Install Rust
+        condition: and( eq( variables['Agent.OS'], 'Windows_NT' ), eq( variables['docker'], 'false' ))
+      - script: cargo build --release --all
+        displayName: Cargo Build
+        condition: eq( variables['docker'], 'false' )
+      - script: cargo test --release --all
+        displayName: Cargo Test
+        condition: eq( variables['docker'], 'false' )
+
+      - task: CopyFiles@2
+        displayName: Copy Binary
+        inputs:
+          sourceFolder: "$(Build.SourcesDirectory)"
+          contents: |
+            target/**/release/?(lazystream|lazystream.exe)
+          targetFolder: "$(Build.BinariesDirectory)/lazystream"
+          flattenFolders: true
+      - task: CopyFiles@2
+        displayName: Copy Assets
+        inputs:
+          sourceFolder: "$(Build.SourcesDirectory)"
+          contents: |
+            README.md
+          targetFolder: "$(Build.BinariesDirectory)/lazystream"
+
+      - task: ArchiveFiles@2
+        displayName: Linux Archive
+        inputs:
+          rootFolderOrFile: "$(Build.BinariesDirectory)/lazystream"
+          archiveType: "tar"
+          tarCompression: "gz"
+          archiveFile: "$(Build.ArtifactStagingDirectory)/lazystream-$(build.my_tag)-$(TARGET).tar.gz"
+        condition: ne( variables['Agent.OS'], 'Windows_NT' )
+      - task: ArchiveFiles@2
+        displayName: Windows Archive
+        inputs:
+          rootFolderOrFile: "$(Build.BinariesDirectory)/lazystream"
+          archiveType: "zip"
+          archiveFile: "$(Build.ArtifactStagingDirectory)/lazystream-$(build.my_tag)-$(TARGET).zip"
+        condition: eq( variables['Agent.OS'], 'Windows_NT' )
+
+      - task: GithubRelease@0
+        displayName: Publish Assets to Github Release
+        condition: succeeded()
+        inputs:
+          gitHubConnection: "tarkah"
+          repositoryName: "tarkah/lazystream"
+          action: "edit"
+          target: "$(build.sourceVersion)"
+          tagSource: "manual"
+          tag: "$(build.my_tag)"
+          assets: "$(Build.ArtifactStagingDirectory)/*"
+          title: "$(build.my_tag) - $(build.date)"
+          assetUploadMode: "replace"
+          addChangeLog: false
