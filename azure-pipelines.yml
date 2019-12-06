@@ -15,6 +15,9 @@ jobs:
         linux-stable:
           imageName: "ubuntu-latest"
           rustup_toolchain: 1.39.0
+        macos-stable:
+          imageName: "macOS-latest"
+          rustup_toolchain: 1.39.0
 
     pool:
       vmImage: $(imageName)
@@ -23,7 +26,7 @@ jobs:
       - script: |
           curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain $RUSTUP_TOOLCHAIN
           echo "##vso[task.setvariable variable=PATH;]$PATH:$HOME/.cargo/bin"
-        displayName: Linux Install Rust
+        displayName: Linux Darwin Install Rust
         condition: ne( variables['Agent.OS'], 'Windows_NT' )
       - script: |
           curl -sSf -o rustup-init.exe https://win.rustup.rs
@@ -48,6 +51,10 @@ jobs:
           imageName: "ubuntu-latest"
           rustup_toolchain: 1.39.0
           target: "x86_64-unknown-linux-gnu"
+        macos-stable:
+          imageName: "macOS-latest"
+          rustup_toolchain: 1.39.0
+          target: "x86_64-apple-darwin"
 
     pool:
       vmImage: $(imageName)
@@ -56,7 +63,7 @@ jobs:
       - script: |
           curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain $RUSTUP_TOOLCHAIN
           echo "##vso[task.setvariable variable=PATH;]$PATH:$HOME/.cargo/bin"
-        displayName: Linux Install Rust
+        displayName: Linux Darwin Install Rust
         condition: ne( variables['Agent.OS'], 'Windows_NT' )
       - script: |
           curl -sSf -o rustup-init.exe https://win.rustup.rs
@@ -84,6 +91,11 @@ jobs:
           rustup_toolchain: 1.39.0
           target: "x86_64-unknown-linux-gnu"
           docker: false
+        macos-stable:
+          imageName: "macOS-latest"
+          rustup_toolchain: 1.39.0
+          target: "x86_64-apple-darwin"
+          docker: false
 
     pool:
       vmImage: $(imageName)
@@ -103,7 +115,7 @@ jobs:
       - script: |
           curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain $RUSTUP_TOOLCHAIN
           echo "##vso[task.setvariable variable=PATH;]$PATH:$HOME/.cargo/bin"
-        displayName: Linux Install Rust
+        displayName: Linux Darwin Install Rust
         condition: and( ne( variables['Agent.OS'], 'Windows_NT' ), eq( variables['docker'], 'false' ))
       - script: |
           curl -sSf -o rustup-init.exe https://win.rustup.rs
@@ -135,7 +147,7 @@ jobs:
           targetFolder: "$(Build.BinariesDirectory)/lazystream"
 
       - task: ArchiveFiles@2
-        displayName: Linux Archive
+        displayName: Linux Darwin Archive
         inputs:
           rootFolderOrFile: "$(Build.BinariesDirectory)/lazystream"
           archiveType: "tar"
