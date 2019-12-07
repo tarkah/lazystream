@@ -3,6 +3,8 @@
 
 Easily get stream links for the current days NHL schedule
 
+- An m3u playlist can be generated for all currently live games with the `--playlist-output` option
+
 ```
 ❯ lazystream
 
