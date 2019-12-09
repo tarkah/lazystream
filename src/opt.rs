@@ -6,7 +6,7 @@ use structopt::StructOpt;
 #[structopt(
     name = "lazystream",
     about = "Easily get stream links for the current days NHL schedule.",
-    version = "1.2.0",
+    version = "1.3.0",
     author = "tarkah <admin@tarkah.dev>"
 )]
 pub struct Opt {
