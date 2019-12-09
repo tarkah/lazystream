@@ -6,6 +6,23 @@ Easily get stream links for the current days NHL schedule
 - An m3u playlist can be generated for all currently live games with the `--playlist-output` option
 
 ```
+❯ lazystream --help
+
+lazystream 1.3.0
+tarkah <admin@tarkah.dev>
+Easily get stream links for the current days NHL schedule.
+
+USAGE:
+    lazystream [OPTIONS]
+
+FLAGS:
+    -h, --help       Prints help information
+    -V, --version    Prints version information
+
+OPTIONS:
+        --playlist-output <FILE>    Generate a .m3u playlist with all games currently playing
+        --date <YYYYMMDD>           Specify what date to generate stream links for, defaults to today
+
 ❯ lazystream
 
  |        \   __  /\ \   / ___|__ __|  _ \  ____|    \     \  | 
@@ -14,7 +31,7 @@ Easily get stream links for the current days NHL schedule
 _____|_/    _\____|   _| _____/  _|  _| \_\_____|_/    _\_|  _| 
 
 
-Pick a game...
+Pick a game for 2019-12-09...
 
 1) 4:00 PM - Chicago Blackhawks @ Boston Bruins
 2) 4:00 PM - Colorado Avalanche @ MontrÃ©al Canadiens
