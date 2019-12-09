@@ -18,5 +18,3 @@ async-std = "1.0"
 http = "0.1"
 curl = { version = "0.4", default-features=false, features = ["static-curl", "static-ssl", "http2"] }
 http-client = { version = "1.0", features = ["native_client"] }
-
-hls_m3u8 = "0.2"

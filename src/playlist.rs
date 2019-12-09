@@ -3,13 +3,8 @@ use async_std::{fs, sync::Mutex, task};
 use chrono::{DateTime, Local, Utc};
 use failure::{bail, Error, ResultExt};
 use futures::{future, AsyncReadExt};
-use hls_m3u8::{
-    tags::{ExtInf, ExtXTargetDuration},
-    types::SingleLineString,
-    MediaPlaylistBuilder, MediaSegmentBuilder,
-};
 use http_client::{native::NativeClient, Body, HttpClient};
-use std::{path::PathBuf, process, time::Duration};
+use std::{path::PathBuf, process};
 
 pub fn run(path: PathBuf) {
     task::block_on(async {
@@ -87,17 +82,11 @@ async fn process(path: PathBuf) -> Result<(), Error> {
 }
 
 async fn create_playlist(path: PathBuf, games: Vec<GameData>) -> Result<(), Error> {
-    let mut builder = MediaPlaylistBuilder::new();
-
-    // This library forces us to create the Target Duration tag, will remove this line later
-    let duration = Duration::from_secs(0);
-    let ext_target_duration = ExtXTargetDuration::new(duration);
-    builder.tag(ext_target_duration);
-
+    let mut records = vec![];
     for game in games {
         for stream in game.streams {
-            let title = SingleLineString::new(format!(
-                "{} @ {}, {} - {}",
+            let title = format!(
+                "{} @ {} {} {}",
                 game.away,
                 game.home,
                 game.date
@@ -106,27 +95,20 @@ async fn create_playlist(path: PathBuf, games: Vec<GameData>) -> Result<(), Erro
                     .format("%-I:%M %p")
                     .to_string(),
                 stream.feed_type
-            ))?;
-            let ext_inf = ExtInf::with_title(std::time::Duration::from_secs(0), title);
-            let uri = SingleLineString::new(stream.url)?;
-            let mut segment = MediaSegmentBuilder::new();
-            segment.uri(uri).tag(ext_inf);
-            let segment = segment.finish()?;
-            builder.segment(segment);
+            );
+
+            let record = format!("#EXTINF:-1,{}\n{}\n", title, stream.url);
+            records.push(record);
         }
     }
 
-    let playlist = builder.finish()?;
-
-    // Remove Target Duration line here, prevents playlist from loading in VLC
-    let mut string = String::new();
-    for (idx, line) in format!("{}", playlist).lines().enumerate() {
-        if idx != 1 {
-            string.push_str(&format!("{}\n", line));
-        }
+    let mut m3u = String::new();
+    m3u.push_str("#EXTM3U\n");
+    for record in records {
+        m3u.push_str(&record);
     }
 
-    fs::write(&path, string).await?;
+    fs::write(&path, m3u).await?;
 
     println!("Playlist saved to: {:?}", path);
 
