@@ -17,8 +17,8 @@ fn main() {
     let output_type = crate::opt::parse_opts();
 
     match output_type {
-        OutputType::Normal => crate::normal::run(),
-        OutputType::Playlist(path) => crate::playlist::run(path),
+        OutputType::Normal(opts) => crate::normal::run(opts),
+        OutputType::Playlist(opts) => crate::playlist::run(opts),
     }
 }
 

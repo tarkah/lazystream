@@ -1,3 +1,4 @@
+use crate::opt::Opt;
 use crate::{log_error, HOST};
 use async_std::{fs, sync::Mutex, task};
 use chrono::{DateTime, Local, Utc};
@@ -6,16 +7,18 @@ use futures::{future, AsyncReadExt};
 use http_client::{native::NativeClient, Body, HttpClient};
 use std::{path::PathBuf, process};
 
-pub fn run(path: PathBuf) {
+pub fn run(opts: Opt) {
     task::block_on(async {
-        if let Err(e) = process(path).await {
+        if let Err(e) = process(opts).await {
             log_error(&e);
             process::exit(1);
         };
     });
 }
 
-async fn process(path: PathBuf) -> Result<(), Error> {
+async fn process(opts: Opt) -> Result<(), Error> {
+    let path = opts.playlist_output.unwrap();
+
     if let Some(extension) = path.extension() {
         if extension != "m3u" {
             bail!("Playlist file extension must be '.m3u'");
@@ -28,8 +31,12 @@ async fn process(path: PathBuf) -> Result<(), Error> {
 
     let client = stats_api::Client::new();
 
-    let today = Local::today().naive_local();
-    let todays_schedule = client.get_schedule_for(today).await?;
+    let date = if opts.date.is_some() {
+        opts.date.unwrap()
+    } else {
+        Local::today().naive_local()
+    };
+    let todays_schedule = client.get_schedule_for(date).await?;
 
     let mut games = vec![];
     for game in todays_schedule.games {

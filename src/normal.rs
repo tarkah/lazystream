@@ -1,3 +1,4 @@
+use crate::opt::Opt;
 use crate::{log_error, BANNER, HOST};
 use async_std::task;
 use chrono::Local;
@@ -5,9 +6,9 @@ use failure::{format_err, Error};
 use read_input::prelude::*;
 use std::process;
 
-pub fn run() {
+pub fn run(opts: Opt) {
     task::block_on(async {
-        if let Err(e) = process().await {
+        if let Err(e) = process(opts).await {
             log_error(&e);
             process::exit(1);
         };
@@ -18,15 +19,19 @@ pub fn run() {
     }
 }
 
-async fn process() -> Result<(), Error> {
+async fn process(opts: Opt) -> Result<(), Error> {
     println!("{}", BANNER);
 
     let client = stats_api::Client::new();
 
-    let today = Local::today().naive_local();
-    let todays_schedule = client.get_schedule_for(today).await?;
+    let date = if opts.date.is_some() {
+        opts.date.unwrap()
+    } else {
+        Local::today().naive_local()
+    };
+    let todays_schedule = client.get_schedule_for(date).await?;
 
-    println!("\nPick a game...\n");
+    println!("\nPick a game for {}...\n", date.format("%Y-%m-%d"));
     for (idx, game) in todays_schedule.games.iter().enumerate() {
         println!(
             "{}) {} - {} @ {}",
