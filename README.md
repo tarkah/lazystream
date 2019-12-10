@@ -10,7 +10,7 @@ Easily get LazyMan stream links, output directly or to m3u / xmltv formats.
 ```
 ❯ lazystream --help
 
-lazystream 1.3.0
+lazystream 1.4.0
 tarkah <admin@tarkah.dev>
 Easily get LazyMan stream links, output directly or to m3u / xmltv formats.
 
@@ -22,10 +22,13 @@ FLAGS:
     -V, --version    Prints version information
 
 OPTIONS:
-        --date <YYYYMMDD>                      Specify what date to generate stream links for, defaults to today
-        --playlist-output <playlist-output>    Generate a .m3u playlist file for all games
-        --xmltv-output <xmltv-output>          Generate a .xml XMLTV file for all games with corresponding .m3u playlist
-                                               file
+        --date <YYYYMMDD>                              Specify what date to generate stream links for, defaults to today
+        --playlist-output <playlist-output>            Generate a .m3u playlist file for all games
+        --xmltv-output <xmltv-output>
+            Generate a .xml XMLTV file for all games with corresponding .m3u playlist file
+
+        --xmltv-start-channel <xmltv-start-channel>
+            Specify the starting channel number for the XMLVTV output [default: 1000]
 
 ❯ lazystream
 

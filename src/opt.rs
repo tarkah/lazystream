@@ -19,6 +19,9 @@ pub struct Opt {
     #[structopt(long, parse(from_os_str))]
     /// Generate a .xml XMLTV file for all games with corresponding .m3u playlist file
     pub xmltv_output: Option<PathBuf>,
+    #[structopt(long, default_value = "1000")]
+    /// Specify the starting channel number for the XMLVTV output
+    pub xmltv_start_channel: u32,
 }
 
 pub fn parse_opts() -> OutputType {

@@ -86,19 +86,24 @@ async fn process(opts: Opt) -> Result<(), Error> {
 
     if let Some(path) = opts.xmltv_output {
         let path = path.with_extension("m3u");
-        create_playlist(path.clone(), games.clone(), true).await?;
+        create_playlist(path.clone(), games.clone(), true, opts.xmltv_start_channel).await?;
 
         let path = path.with_extension("xml");
-        create_xmltv(path, games).await?;
+        create_xmltv(path, games, opts.xmltv_start_channel).await?;
     } else if let Some(path) = opts.playlist_output {
         let path = path.with_extension("m3u");
-        create_playlist(path, games, false).await?;
+        create_playlist(path, games, false, opts.xmltv_start_channel).await?;
     }
 
     Ok(())
 }
 
-async fn create_playlist(path: PathBuf, games: Vec<GameData>, xmltv: bool) -> Result<(), Error> {
+async fn create_playlist(
+    path: PathBuf,
+    games: Vec<GameData>,
+    xmltv: bool,
+    start_channel: u32,
+) -> Result<(), Error> {
     let mut m3u = String::new();
     m3u.push_str("#EXTM3U\n");
 
@@ -123,8 +128,8 @@ async fn create_playlist(path: PathBuf, games: Vec<GameData>, xmltv: bool) -> Re
 
             let record = format!(
                 "#EXTINF:-1 CUID=\"{}\" tvg-id=\"{}\" tvg-name=\"Lazyman {}\",{}\n{}\n",
-                1000 + id,
-                1000 + id,
+                start_channel + id,
+                start_channel + id,
                 id + 1,
                 title,
                 stream.url
@@ -141,7 +146,11 @@ async fn create_playlist(path: PathBuf, games: Vec<GameData>, xmltv: bool) -> Re
     Ok(())
 }
 
-async fn create_xmltv(path: PathBuf, games: Vec<GameData>) -> Result<(), Error> {
+async fn create_xmltv(
+    path: PathBuf,
+    games: Vec<GameData>,
+    start_channel: u32,
+) -> Result<(), Error> {
     let mut xmltv = String::new();
     xmltv.push_str(
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n\
@@ -157,7 +166,7 @@ async fn create_xmltv(path: PathBuf, games: Vec<GameData>) -> Result<(), Error> 
              \n      <display-name>Lazyman {}</display-name>\
              \n      <icon src=\"\"></icon>\
              \n    </channel>",
-            1000 + id,
+            start_channel + id,
             id + 1
         );
         xmltv.push_str(&record);
@@ -188,7 +197,7 @@ async fn create_xmltv(path: PathBuf, games: Vec<GameData>) -> Result<(), Error> 
                  \n      <desc lang=\"en\">{}</desc>\
                  \n      <icon src=\"\"></icon>\
                  \n    </programme>",
-                1000 + id,
+                start_channel + id,
                 start.format("%Y%m%d"),
                 start.format("%:z"),
                 stop.format("%Y%m%d"),
