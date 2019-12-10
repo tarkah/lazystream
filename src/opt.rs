@@ -6,7 +6,7 @@ use structopt::StructOpt;
 #[structopt(
     name = "lazystream",
     about = "Easily get LazyMan stream links, output directly or to m3u / xmltv formats.",
-    version = "1.3.0",
+    version = "1.4.0",
     author = "tarkah <admin@tarkah.dev>"
 )]
 pub struct Opt {

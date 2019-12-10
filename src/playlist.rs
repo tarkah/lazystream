@@ -147,7 +147,7 @@ async fn create_xmltv(path: PathBuf, games: Vec<GameData>) -> Result<(), Error> 
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n\
          <!DOCTYPE tv SYSTEM \"xmltv.dd\">\
          \n\
-         \n  <tv generator-info-name=\"lazystream\" source-info-name=\"lazystream - 1.3.0\">",
+         \n  <tv generator-info-name=\"lazystream\" source-info-name=\"lazystream - 1.4.0\">",
     );
 
     let mut id: u32 = 0;
