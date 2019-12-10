@@ -10,7 +10,7 @@ Easily get LazyMan stream links, output directly or to m3u / xmltv formats.
 ```
 ❯ lazystream --help
 
-lazystream 1.4.0
+lazystream 1.4.1
 tarkah <admin@tarkah.dev>
 Easily get LazyMan stream links, output directly or to m3u / xmltv formats.
 
