@@ -5,7 +5,7 @@ use structopt::StructOpt;
 #[derive(StructOpt, Debug)]
 #[structopt(
     name = "lazystream",
-    about = "Easily get stream links for the current days NHL schedule.",
+    about = "Easily get LazyMan stream links, output directly or to m3u / xmltv formats.",
     version = "1.3.0",
     author = "tarkah <admin@tarkah.dev>"
 )]
@@ -14,10 +14,10 @@ pub struct Opt {
     /// Specify what date to generate stream links for, defaults to today
     pub date: Option<NaiveDate>,
     #[structopt(long, parse(from_os_str))]
-    /// Generate a .m3u playlist with all games currently playing
+    /// Generate a .m3u playlist file for all games
     pub playlist_output: Option<PathBuf>,
     #[structopt(long, parse(from_os_str))]
-    /// Generate a .m3u playlist with corresponding .xml XMLTV file
+    /// Generate a .xml XMLTV file for all games with corresponding .m3u playlist file
     pub xmltv_output: Option<PathBuf>,
 }
 

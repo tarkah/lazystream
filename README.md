@@ -3,14 +3,16 @@
 
 Easily get stream links for the current days NHL schedule
 
-- An m3u playlist can be generated for all currently live games with the `--playlist-output` option
+- Defaults to grabbing the current days games. `--date YYYYMMDD` can be specified for a certain day. 
+- An m3u playlist can be generated for all games with the `--playlist-output` option
+- An xmltv file with corresponding m3u playlist can be generated with the `--xmltv-output` option
 
 ```
 ❯ lazystream --help
 
 lazystream 1.3.0
 tarkah <admin@tarkah.dev>
-Easily get stream links for the current days NHL schedule.
+Easily get LazyMan stream links, output directly or to m3u / xmltv formats.
 
 USAGE:
     lazystream [OPTIONS]
@@ -20,8 +22,10 @@ FLAGS:
     -V, --version    Prints version information
 
 OPTIONS:
-        --playlist-output <FILE>    Generate a .m3u playlist with all games currently playing
-        --date <YYYYMMDD>           Specify what date to generate stream links for, defaults to today
+        --date <YYYYMMDD>                      Specify what date to generate stream links for, defaults to today
+        --playlist-output <playlist-output>    Generate a .m3u playlist file for all games
+        --xmltv-output <xmltv-output>          Generate a .xml XMLTV file for all games with corresponding .m3u playlist
+                                               file
 
 ❯ lazystream
 
