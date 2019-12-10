@@ -1,5 +1,4 @@
-use crate::opt::Opt;
-use crate::{log_error, BANNER, HOST};
+use crate::{log_error, opt::Opt, BANNER, HOST};
 use async_std::task;
 use chrono::Local;
 use failure::{format_err, Error};

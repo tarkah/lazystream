@@ -1,6 +1,4 @@
-use crate::opt::Opt;
-use crate::VERSION;
-use crate::{log_error, HOST};
+use crate::{log_error, opt::Opt, HOST, VERSION};
 use async_std::{fs, sync::Mutex, task};
 use chrono::{DateTime, Local, Utc};
 use failure::{bail, Error, ResultExt};
