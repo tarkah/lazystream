@@ -10,18 +10,21 @@ use structopt::StructOpt;
     author = "tarkah <admin@tarkah.dev>"
 )]
 pub struct Opt {
-    #[structopt(long, parse(from_os_str), name = "FILE")]
-    /// Generate a .m3u playlist with all games currently playing
-    pub playlist_output: Option<PathBuf>,
     #[structopt(long, parse(try_from_str = parse_date), name = "YYYYMMDD")]
     /// Specify what date to generate stream links for, defaults to today
     pub date: Option<NaiveDate>,
+    #[structopt(long, parse(from_os_str))]
+    /// Generate a .m3u playlist with all games currently playing
+    pub playlist_output: Option<PathBuf>,
+    #[structopt(long, parse(from_os_str))]
+    /// Generate a .m3u playlist with corresponding .xml XMLTV file
+    pub xmltv_output: Option<PathBuf>,
 }
 
 pub fn parse_opts() -> OutputType {
     let opts = Opt::from_args();
 
-    if opts.playlist_output.is_some() {
+    if opts.playlist_output.is_some() || opts.xmltv_output.is_some() {
         return OutputType::Playlist(opts);
     }
 

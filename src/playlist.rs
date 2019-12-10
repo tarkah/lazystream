@@ -17,17 +17,11 @@ pub fn run(opts: Opt) {
 }
 
 async fn process(opts: Opt) -> Result<(), Error> {
-    let path = opts.playlist_output.unwrap();
-
-    if let Some(extension) = path.extension() {
-        if extension != "m3u" {
-            bail!("Playlist file extension must be '.m3u'");
-        }
-    } else {
-        bail!("Playlist file extension must be '.m3u'");
+    if opts.xmltv_output.is_some() {
+        println!("Creating .m3u & .xml for XMLTV...");
+    } else if opts.playlist_output.is_some() {
+        println!("Creating playlist file...");
     }
-
-    println!("Creating playlist...");
 
     let client = stats_api::Client::new();
 
@@ -43,6 +37,13 @@ async fn process(opts: Opt) -> Result<(), Error> {
         let mut game_data = GameData::new(&game);
 
         let game_content = client.get_game_content(game.game_pk).await?;
+
+        let preview_items = game_content.editorial.preview.items;
+        if let Some(items) = preview_items {
+            if let Some(preview) = items.first() {
+                game_data.description = Some(preview.subhead.clone());
+            }
+        }
 
         for epg in game_content.media.epg {
             if epg.title == "NHLTV" {
@@ -83,41 +84,128 @@ async fn process(opts: Opt) -> Result<(), Error> {
         games.push(game_data);
     }
 
-    create_playlist(path, games).await?;
+    if let Some(path) = opts.xmltv_output {
+        let path = path.with_extension("m3u");
+        create_playlist(path.clone(), games.clone(), true).await?;
+
+        let path = path.with_extension("xml");
+        create_xmltv(path, games).await?;
+    } else if let Some(path) = opts.playlist_output {
+        let path = path.with_extension("m3u");
+        create_playlist(path, games, false).await?;
+    }
 
     Ok(())
 }
 
-async fn create_playlist(path: PathBuf, games: Vec<GameData>) -> Result<(), Error> {
-    let mut records = vec![];
-    for game in games {
-        for stream in game.streams {
-            let title = format!(
-                "{} @ {} {} {}",
-                game.away,
-                game.home,
-                game.date
-                    .with_timezone(&Local)
-                    .time()
-                    .format("%-I:%M %p")
-                    .to_string(),
-                stream.feed_type
-            );
-
-            let record = format!("#EXTINF:-1,{}\n{}\n", title, stream.url);
-            records.push(record);
-        }
-    }
-
+async fn create_playlist(path: PathBuf, games: Vec<GameData>, xmltv: bool) -> Result<(), Error> {
     let mut m3u = String::new();
     m3u.push_str("#EXTM3U\n");
-    for record in records {
-        m3u.push_str(&record);
+
+    let mut id: u32 = 0;
+    for game in games.iter() {
+        for stream in game.streams.iter() {
+            let title = if xmltv {
+                format!("Lazyman {}", id + 1)
+            } else {
+                format!(
+                    "{} {} @ {} {}",
+                    game.date
+                        .with_timezone(&Local)
+                        .time()
+                        .format("%-I:%M %p")
+                        .to_string(),
+                    game.away,
+                    game.home,
+                    stream.feed_type,
+                )
+            };
+
+            let record = format!(
+                "#EXTINF:-1 CUID=\"{}\" tvg-id=\"{}\" tvg-name=\"Lazyman {}\",{}\n{}\n",
+                1000 + id,
+                1000 + id,
+                id + 1,
+                title,
+                stream.url
+            );
+            m3u.push_str(&record);
+            id += 1;
+        }
     }
 
     fs::write(&path, m3u).await?;
 
     println!("Playlist saved to: {:?}", path);
+
+    Ok(())
+}
+
+async fn create_xmltv(path: PathBuf, games: Vec<GameData>) -> Result<(), Error> {
+    let mut xmltv = String::new();
+    xmltv.push_str(
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n\
+         <!DOCTYPE tv SYSTEM \"xmltv.dd\">\
+         \n\
+         \n  <tv generator-info-name=\"lazystream\" source-info-name=\"lazystream - 1.3.0\">",
+    );
+
+    let mut id: u32 = 0;
+    while id < 100 {
+        let record = format!(
+            "\n    <channel id=\"{}\">\
+             \n      <display-name>Lazyman {}</display-name>\
+             \n      <icon src=\"\"></icon>\
+             \n    </channel>",
+            1000 + id,
+            id + 1
+        );
+        xmltv.push_str(&record);
+        id += 1;
+    }
+
+    let mut id: u32 = 0;
+    for game in games.iter() {
+        for stream in game.streams.iter() {
+            let start = Local::now();
+            let stop = Local::now();
+            let description = game.description.clone().unwrap_or_else(|| "".into());
+            let title = format!(
+                "{} {} {} @ {}",
+                game.date
+                    .with_timezone(&Local)
+                    .time()
+                    .format("%-I:%M %p")
+                    .to_string(),
+                stream.feed_type,
+                game.away,
+                game.home,
+            );
+
+            let record = format!(
+                "\n    <programme channel=\"{}\" start=\"{}000000 {}\" stop=\"{}235959 {}\">\
+                 \n      <title lang=\"en\">{}</title>\
+                 \n      <desc lang=\"en\">{}</desc>\
+                 \n      <icon src=\"\"></icon>\
+                 \n    </programme>",
+                1000 + id,
+                start.format("%Y%m%d"),
+                start.format("%:z"),
+                stop.format("%Y%m%d"),
+                stop.format("%:z"),
+                title,
+                description,
+            );
+            xmltv.push_str(&record);
+            id += 1;
+        }
+    }
+
+    xmltv.push_str("\n  </tv>");
+
+    fs::write(&path, xmltv).await?;
+
+    println!("Xmltv file saved to: {:?}", path);
 
     Ok(())
 }
@@ -145,15 +233,16 @@ async fn get_m3u8(client: &NativeClient, url: String) -> Result<String, Error> {
     Ok(body_text)
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct GameData {
     home: String,
     away: String,
+    description: Option<String>,
     date: DateTime<Utc>,
     streams: Vec<Stream>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Stream {
     feed_type: String,
     url: String,
@@ -169,6 +258,7 @@ impl GameData {
         GameData {
             home,
             away,
+            description: None,
             date,
             streams,
         }
