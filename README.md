@@ -1,7 +1,7 @@
 # LazyStream
 [![Build Status](https://dev.azure.com/tarkah/lazystream/_apis/build/status/tarkah.lazystream?branchName=master)](https://dev.azure.com/tarkah/lazystream/_build/latest?definitionId=11&branchName=master)
 
-Easily get stream links for the current days NHL schedule
+Easily get LazyMan stream links, output directly or to m3u / xmltv formats.
 
 - Defaults to grabbing the current days games. `--date YYYYMMDD` can be specified for a certain day. 
 - An m3u playlist can be generated for all games with the `--playlist-output` option
