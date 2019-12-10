@@ -1,4 +1,5 @@
 use crate::opt::Opt;
+use crate::VERSION;
 use crate::{log_error, HOST};
 use async_std::{fs, sync::Mutex, task};
 use chrono::{DateTime, Local, Utc};
@@ -152,12 +153,13 @@ async fn create_xmltv(
     start_channel: u32,
 ) -> Result<(), Error> {
     let mut xmltv = String::new();
-    xmltv.push_str(
+    xmltv.push_str(&format!(
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n\
          <!DOCTYPE tv SYSTEM \"xmltv.dd\">\
          \n\
-         \n  <tv generator-info-name=\"lazystream\" source-info-name=\"lazystream - 1.4.0\">",
-    );
+         \n  <tv generator-info-name=\"lazystream\" source-info-name=\"lazystream - {}\">",
+        VERSION
+    ));
 
     let mut id: u32 = 0;
     while id < 100 {

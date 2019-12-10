@@ -1,3 +1,4 @@
+use crate::VERSION;
 use chrono::{format::ParseError, NaiveDate};
 use std::path::PathBuf;
 use structopt::StructOpt;
@@ -6,7 +7,7 @@ use structopt::StructOpt;
 #[structopt(
     name = "lazystream",
     about = "Easily get LazyMan stream links, output directly or to m3u / xmltv formats.",
-    version = "1.4.0",
+    version = VERSION,
     author = "tarkah <admin@tarkah.dev>"
 )]
 pub struct Opt {
