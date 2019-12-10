@@ -41,6 +41,12 @@ async fn process(opts: Opt) -> Result<(), Error> {
         if let Some(items) = preview_items {
             if let Some(preview) = items.first() {
                 game_data.description = Some(preview.subhead.clone());
+
+                if let Some(ref media) = preview.media {
+                    if media.r#type == "photo" {
+                        game_data.cuts = Some(media.image.cuts.clone());
+                    }
+                }
             }
         }
 
@@ -164,7 +170,7 @@ async fn create_xmltv(
         let record = format!(
             "\n    <channel id=\"{}\">\
              \n      <display-name>Lazyman {}</display-name>\
-             \n      <icon src=\"\"></icon>\
+             \n      <icon src=\"http://home.windstream.net/dgrodecki/images/nhl/nhl_logo2.jpg\"></icon>\
              \n    </channel>",
             start_channel + id,
             id + 1
@@ -175,6 +181,21 @@ async fn create_xmltv(
 
     let mut id: u32 = 0;
     for game in games.iter() {
+        let icons = if let Some(ref game_cuts) = game.cuts {
+            let cuts = vec![&game_cuts.cut_320_180, &game_cuts.cut_2048_1152];
+            let mut icons = String::new();
+            for cut in cuts {
+                let icon = format!(
+                    "\n      <icon src=\"{}\" width=\"{}\" height=\"{}\"></icon>",
+                    cut.src, cut.width, cut.height,
+                );
+                icons.push_str(&icon);
+            }
+            icons
+        } else {
+            String::from("\n      <icon src=\"\"></icon>")
+        };
+
         for stream in game.streams.iter() {
             let start = Local::now();
             let stop = Local::now();
@@ -195,7 +216,7 @@ async fn create_xmltv(
                 "\n    <programme channel=\"{}\" start=\"{}000000 {}\" stop=\"{}235959 {}\">\
                  \n      <title lang=\"en\">{}</title>\
                  \n      <desc lang=\"en\">{}</desc>\
-                 \n      <icon src=\"\"></icon>\
+                 {}\
                  \n    </programme>",
                 start_channel + id,
                 start.format("%Y%m%d"),
@@ -204,6 +225,7 @@ async fn create_xmltv(
                 stop.format("%:z"),
                 title,
                 description,
+                icons,
             );
             xmltv.push_str(&record);
             id += 1;
@@ -249,6 +271,7 @@ struct GameData {
     description: Option<String>,
     date: DateTime<Utc>,
     streams: Vec<Stream>,
+    cuts: Option<stats_api::model::GameContentArticleMediaImageCut>,
 }
 
 #[derive(Debug, Clone)]
@@ -270,6 +293,7 @@ impl GameData {
             description: None,
             date,
             streams,
+            cuts: None,
         }
     }
 }
