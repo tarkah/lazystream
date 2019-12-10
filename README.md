@@ -6,6 +6,7 @@ Easily get LazyMan stream links, output directly or to m3u / xmltv formats.
 - Defaults to grabbing the current days games. `--date YYYYMMDD` can be specified for a certain day. 
 - An m3u playlist can be generated for all games with the `--playlist-output` option
 - An xmltv file with corresponding m3u playlist can be generated with the `--xmltv-output` option
+    - Default starting channel is 1000 in output. This can be changed with `--xmltv-start-channel INT`
 
 ```
 ❯ lazystream --help
