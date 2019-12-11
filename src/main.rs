@@ -5,7 +5,7 @@ mod normal;
 mod opt;
 mod playlist;
 
-const VERSION: &str = "1.4.2";
+const VERSION: &str = "1.4.3";
 const HOST: &str = "http://nhl.freegamez.ga";
 const BANNER: &str = r#"
  |        \   __  /\ \   / ___|__ __|  _ \  ____|    \     \  | 
