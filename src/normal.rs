@@ -21,6 +21,8 @@ pub fn run(opts: Opt) {
 async fn process(opts: Opt) -> Result<(), Error> {
     println!("{}", BANNER);
 
+    let cdn: &str = opts.cdn.into();
+
     let client = stats_api::Client::new();
 
     let date = if opts.date.is_some() {
@@ -75,10 +77,11 @@ async fn process(opts: Opt) -> Result<(), Error> {
                     .ok_or_else(|| format_err!("Invalid stream choice"))?;
 
                 let url = format!(
-                    "{}/getM3U8.php?league=nhl&date={}&id={}&cdn=akc",
+                    "{}/getM3U8.php?league=nhl&date={}&id={}&cdn={}",
                     HOST,
                     todays_schedule.date.format("%Y-%m-%d"),
-                    stream.media_playback_id
+                    stream.media_playback_id,
+                    cdn,
                 );
 
                 println!("\n{}", url);

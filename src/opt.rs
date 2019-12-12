@@ -1,6 +1,7 @@
 use crate::VERSION;
 use chrono::{format::ParseError, NaiveDate};
-use std::path::PathBuf;
+use failure::{bail, Error};
+use std::{path::PathBuf, str::FromStr};
 use structopt::StructOpt;
 
 #[derive(StructOpt, Debug)]
@@ -14,6 +15,9 @@ pub struct Opt {
     #[structopt(long, parse(try_from_str = parse_date), name = "YYYYMMDD")]
     /// Specify what date to generate stream links for, defaults to today
     pub date: Option<NaiveDate>,
+    #[structopt(long, parse(try_from_str), default_value = Cdn::Akc.into())]
+    /// Specify which CDN to use: 'akc' or 'l3c'
+    pub cdn: Cdn,
     #[structopt(long, parse(from_os_str))]
     /// Generate a .m3u playlist file for all games
     pub playlist_output: Option<PathBuf>,
@@ -43,4 +47,31 @@ pub enum OutputType {
 fn parse_date(src: &str) -> Result<NaiveDate, ParseError> {
     let s = src.replace("-", "");
     NaiveDate::parse_from_str(&s, "%Y%m%d")
+}
+
+#[derive(Debug)]
+pub enum Cdn {
+    Akc,
+    L3c,
+}
+
+impl From<Cdn> for &str {
+    fn from(cdn: Cdn) -> &'static str {
+        match cdn {
+            Cdn::Akc => "akc",
+            Cdn::L3c => "l3c",
+        }
+    }
+}
+
+impl FromStr for Cdn {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Cdn, Error> {
+        match s {
+            "akc" => Ok(Cdn::Akc),
+            "l3c" => Ok(Cdn::L3c),
+            _ => bail!("Option must match 'akc' or 'l3c'"),
+        }
+    }
 }

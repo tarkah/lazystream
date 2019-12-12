@@ -22,6 +22,8 @@ async fn process(opts: Opt) -> Result<(), Error> {
         println!("Creating playlist file...");
     }
 
+    let cdn: &str = opts.cdn.into();
+
     let client = stats_api::Client::new();
 
     let date = if opts.date.is_some() {
@@ -62,8 +64,8 @@ async fn process(opts: Opt) -> Result<(), Error> {
                         .map(|stream| {
                             async {
                                 let url = format!(
-                                    "{}/getM3U8.php?league=nhl&date={}&id={}&cdn=akc",
-                                    HOST, &date, &stream.media_playback_id
+                                    "{}/getM3U8.php?league=nhl&date={}&id={}&cdn={}",
+                                    HOST, &date, &stream.media_playback_id, cdn,
                                 );
 
                                 if let Ok(m3u8) = get_m3u8(&client, url).await {
