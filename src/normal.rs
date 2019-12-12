@@ -1,4 +1,9 @@
-use crate::{log_error, opt::Opt, BANNER, HOST};
+use crate::{
+    log_error,
+    opt::Opt,
+    stream::{get_master_m3u8, get_master_url, get_quality_url},
+    BANNER, HOST,
+};
 use async_std::task;
 use chrono::Local;
 use failure::{format_err, Error};
@@ -84,7 +89,15 @@ async fn process(opts: Opt) -> Result<(), Error> {
                     cdn,
                 );
 
-                println!("\n{}", url);
+                if let Some(ref quality) = opts.quality {
+                    let master_url = get_master_url(&url).await?;
+                    let master_m3u8 = get_master_m3u8(&master_url).await?;
+                    let quality_url = get_quality_url(&master_url, &master_m3u8, quality.clone())?;
+
+                    println!("\n{}", quality_url);
+                } else {
+                    println!("\n{}", url);
+                }
             }
         }
     }

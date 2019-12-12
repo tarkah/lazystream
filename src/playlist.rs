@@ -1,9 +1,14 @@
-use crate::{log_error, opt::Opt, HOST, VERSION};
+use crate::{
+    log_error,
+    opt::{Opt, Quality},
+    stream::{get_master_m3u8, get_master_url, get_quality_url},
+    HOST, VERSION,
+};
 use async_std::{fs, sync::Mutex, task};
 use chrono::{DateTime, Local, Utc};
-use failure::{bail, Error, ResultExt};
-use futures::{future, AsyncReadExt};
-use http_client::{native::NativeClient, Body, HttpClient};
+use failure::Error;
+use futures::future::join_all;
+use stats_api::model::GameContentResponse;
 use std::{path::PathBuf, process};
 
 pub fn run(opts: Opt) {
@@ -22,6 +27,7 @@ async fn process(opts: Opt) -> Result<(), Error> {
         println!("Creating playlist file...");
     }
 
+    let quality = opts.quality.clone();
     let cdn: &str = opts.cdn.into();
 
     let client = stats_api::Client::new();
@@ -32,64 +38,32 @@ async fn process(opts: Opt) -> Result<(), Error> {
         Local::today().naive_local()
     };
     let todays_schedule = client.get_schedule_for(date).await?;
+    let date = todays_schedule.date.format("%Y-%m-%d").to_string();
 
-    let mut games = vec![];
-    for game in todays_schedule.games {
-        let mut game_data = GameData::new(&game);
+    let games = Mutex::new(vec![]);
+    let tasks: Vec<_> = todays_schedule
+        .games
+        .into_iter()
+        .map(|game| {
+            async {
+                let game_data = GameData::new(&game);
 
-        let game_content = client.get_game_content(game.game_pk).await?;
+                let client = stats_api::Client::new();
+                if let Ok(game_content) = client.get_game_content(game.game_pk).await {
+                    let game_data = add_game_media_items(game_data, &game_content);
 
-        let preview_items = game_content.editorial.preview.items;
-        if let Some(items) = preview_items {
-            if let Some(preview) = items.first() {
-                game_data.description = Some(preview.subhead.clone());
+                    let game_data =
+                        add_game_streams(game_data, game_content, &date, &cdn, &quality).await;
 
-                if let Some(ref media) = preview.media {
-                    if media.r#type == "photo" {
-                        game_data.cuts = Some(media.image.cuts.clone());
-                    }
+                    games.lock().await.push(game_data);
                 }
+                drop(game);
             }
-        }
+        })
+        .collect();
 
-        for epg in game_content.media.epg {
-            if epg.title == "NHLTV" {
-                if let Some(items) = epg.items {
-                    let client = NativeClient::default();
-                    let date = todays_schedule.date.format("%Y-%m-%d");
-
-                    let streams = Mutex::new(vec![]);
-                    let tasks = items
-                        .into_iter()
-                        .map(|stream| {
-                            async {
-                                let url = format!(
-                                    "{}/getM3U8.php?league=nhl&date={}&id={}&cdn={}",
-                                    HOST, &date, &stream.media_playback_id, cdn,
-                                );
-
-                                if let Ok(m3u8) = get_m3u8(&client, url).await {
-                                    let mut streams = streams.lock().await;
-                                    streams.push((stream.media_feed_type, m3u8));
-                                };
-                            }
-                        })
-                        .collect::<Vec<_>>();
-
-                    future::join_all(tasks).await;
-
-                    let streams = streams.lock().await.clone();
-
-                    for (feed_type, url) in streams {
-                        let stream = Stream { feed_type, url };
-                        game_data.streams.push(stream);
-                    }
-                }
-            }
-        }
-
-        games.push(game_data);
-    }
+    join_all(tasks).await;
+    let games = games.into_inner();
 
     if let Some(path) = opts.xmltv_output {
         let path = path.with_extension("m3u");
@@ -103,6 +77,81 @@ async fn process(opts: Opt) -> Result<(), Error> {
     }
 
     Ok(())
+}
+
+fn add_game_media_items(mut game_data: GameData, game_content: &GameContentResponse) -> GameData {
+    let preview_items = &game_content.editorial.preview.items;
+    if let Some(items) = preview_items {
+        if let Some(preview) = items.first() {
+            game_data.description = Some(preview.subhead.clone());
+
+            if let Some(ref media) = preview.media {
+                if media.r#type == "photo" {
+                    game_data.cuts = Some(media.image.cuts.clone());
+                }
+            }
+        }
+    }
+
+    game_data
+}
+
+async fn add_game_streams(
+    game_data: GameData,
+    game_content: GameContentResponse,
+    date: &str,
+    cdn: &str,
+    quality: &Option<Quality>,
+) -> GameData {
+    let game_data = Mutex::new(game_data);
+
+    let tasks: Vec<_> = game_content
+        .media
+        .epg
+        .into_iter()
+        .map(|epg| {
+            async {
+                if epg.title == "NHLTV" {
+                    if let Some(ref items) = epg.items {
+                        let mut streams = vec![];
+                        for item in items {
+                            let url = format!(
+                                "{}/getM3U8.php?league=nhl&date={}&id={}&cdn={}",
+                                HOST, &date, &item.media_playback_id, cdn,
+                            );
+
+                            if let Ok(master_url) = get_master_url(&url).await {
+                                if let Some(quality) = quality {
+                                    if let Ok(master_m3u8) = get_master_m3u8(&master_url).await {
+                                        if let Ok(quality_url) = get_quality_url(
+                                            &master_url,
+                                            &master_m3u8,
+                                            quality.clone(),
+                                        ) {
+                                            streams
+                                                .push((item.media_feed_type.clone(), quality_url));
+                                        }
+                                    }
+                                } else {
+                                    streams.push((item.media_feed_type.clone(), master_url));
+                                }
+                            }
+                        }
+
+                        for (feed_type, url) in streams {
+                            let stream = Stream { feed_type, url };
+                            game_data.lock().await.streams.push(stream);
+                        }
+                    }
+                }
+                drop(epg);
+            }
+        })
+        .collect();
+
+    join_all(tasks).await;
+
+    game_data.into_inner()
 }
 
 async fn create_playlist(
@@ -241,29 +290,6 @@ async fn create_xmltv(
     println!("Xmltv file saved to: {:?}", path);
 
     Ok(())
-}
-
-async fn get_m3u8(client: &NativeClient, url: String) -> Result<String, Error> {
-    let uri = url.parse::<http::Uri>().context("Failed to build URI")?;
-    let request = http::Request::builder()
-        .method("GET")
-        .uri(uri)
-        .body(Body::empty())
-        .unwrap();
-
-    let resp = client.send(request).await?;
-
-    let mut body = resp.into_body();
-    let mut body_text = String::new();
-    body.read_to_string(&mut body_text)
-        .await
-        .context("Failed to read response body text")?;
-
-    if !&body_text[..].starts_with("https") {
-        bail!("Game hasn't started");
-    }
-
-    Ok(body_text)
 }
 
 #[derive(Debug, Clone)]

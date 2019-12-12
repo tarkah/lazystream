@@ -4,6 +4,7 @@ use failure::Error;
 mod normal;
 mod opt;
 mod playlist;
+mod stream;
 
 const VERSION: &str = "1.4.3";
 const HOST: &str = "http://nhl.freegamez.ga";
@@ -25,7 +26,7 @@ fn main() {
 
 /// Log any errors and causes
 pub fn log_error(e: &Error) {
-    eprintln!("ERROR: {}", e);
+    eprintln!("\nERROR: {}", e);
     for cause in e.iter_causes() {
         eprintln!("Caused by: {}", cause);
     }
