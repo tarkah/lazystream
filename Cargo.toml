@@ -5,7 +5,7 @@ authors = ["tarkah <admin@tarkah.dev>"]
 edition = "2018"
 
 [dependencies]
-stats-api = { git = "https://github.com/tarkah/stats-api", rev = "f8058c366366c23457819a4a05d34ad61ae26bcd" }
+stats-api = { git = "https://github.com/tarkah/stats-api", rev = "63e694a6bf66eb35cd42b779acdadd958b52b7f3" }
 
 failure = "0.1"
 chrono = "0.4"
@@ -13,6 +13,8 @@ read_input = "0.8"
 structopt = "0.3"
 colored = "1.9"
 regex = "1"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
 
 futures = "0.3.1"
 async-std = { version = "1.0", features = ['unstable'] }

@@ -3,13 +3,14 @@ use colored::Colorize;
 use failure::Error;
 
 mod generate;
+mod generic_stats_api;
 mod opt;
 mod select;
 mod stream;
 mod streamlink;
 
 const VERSION: &str = "1.8.1";
-const HOST: &str = "http://nhl.freegamez.ga";
+const HOST: &str = "http://freegamez.ga";
 const BANNER: &str = r#"
  |        \   __  /\ \   / ___|__ __|  _ \  ____|    \     \  | 
  |       _ \     /  \   /\___ \   |   |   | __|     _ \   |\/ | 
