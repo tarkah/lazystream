@@ -96,6 +96,16 @@ jobs:
           rustup_toolchain: 1.39.0
           target: "x86_64-apple-darwin"
           docker: false
+        armv7-stable:
+          imageName: 'ubuntu-latest'
+          rustup_toolchain: 1.39.0
+          target: 'armv7-unknown-linux-gnueabihf'
+          docker: true
+        aarch64-stable:
+          imageName: 'ubuntu-latest'
+          rustup_toolchain: 1.39.0
+          target: 'aarch64-unknown-linux-gnu'
+          docker: true
 
     pool:
       vmImage: $(imageName)
@@ -129,6 +139,15 @@ jobs:
       - script: cargo test --release --all
         displayName: Cargo Test
         condition: eq( variables['docker'], 'false' )
+
+      - script: |
+         docker build -t lazystream:$TARGET ./ci/$TARGET/
+        displayName: Cross Setup Docker
+        condition: eq( variables['docker'], 'true' )
+      - script: |
+         docker run -v "$(pwd):/source" lazystream:$TARGET cargo build --release --manifest-path /source/Cargo.toml --target $TARGET
+        displayName: Cross Build
+        condition: eq( variables['docker'], 'true' )
 
       - task: CopyFiles@2
         displayName: Copy Binary
