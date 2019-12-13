@@ -19,12 +19,27 @@ USAGE:
     lazystream [OPTIONS]
 
 FLAGS:
-    -h, --help       Prints help information
-    -V, --version    Prints version information
+    -h, --help       
+            Prints help information
+
+    -V, --version    
+            Prints version information
+
 
 OPTIONS:
-        --date <YYYYMMDD>                              Specify what date to generate stream links for, defaults to today
-        --playlist-output <playlist-output>            Generate a .m3u playlist file for all games
+        --date <YYYYMMDD>                              
+            Specify what date to generate stream links for, defaults to today
+
+        --cdn <cdn>                                    
+            Specify which CDN to use: 'akc' or 'l3c' [default: akc]
+
+        --playlist-output <playlist-output>            
+            Generate a .m3u playlist file for all games
+
+        --quality <quality>                            
+            Specify a quality to use, otherwise stream will be adaptive.
+            
+            Must be one of: '720p60', '720p', '540p', '504p', '360p', '288p', '224p', '216p'
         --xmltv-output <xmltv-output>
             Generate a .xml XMLTV file for all games with corresponding .m3u playlist file
 
