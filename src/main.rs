@@ -8,7 +8,7 @@ mod record;
 mod select;
 mod stream;
 
-const VERSION: &str = "1.5.1";
+const VERSION: &str = "1.6.0";
 const HOST: &str = "http://nhl.freegamez.ga";
 const BANNER: &str = r#"
  |        \   __  /\ \   / ___|__ __|  _ \  ____|    \     \  | 
