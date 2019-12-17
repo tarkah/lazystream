@@ -4,9 +4,8 @@
 Easily get LazyMan stream links, output directly or to m3u / xmltv formats.
 
 - Defaults to grabbing the current days games. `--date YYYYMMDD` can be specified for a certain day. 
-- An m3u playlist can be generated for all games with the `--playlist-output` option
-- An xmltv file with corresponding m3u playlist can be generated with the `--xmltv-output` option
-    - Default starting channel is 1000 in output. This can be changed with `--xmltv-start-channel INT`
+- xmltv and m3u playlist formats can be generated for all games using the `generate` subcommand
+- Games can be recorded using the `record` subcommand. This requires StreamLink is installed and in your path. If a game is live, you can use the `--restart` flag to start recording from the beginning of the stream. Currently `best` quality is used with StreamLink, the `--quality` option doesn't affect this, for now.
 
 ```
 ❯ lazystream --help
@@ -16,37 +15,25 @@ tarkah <admin@tarkah.dev>
 Easily get LazyMan stream links, output directly or to m3u / xmltv formats.
 
 USAGE:
-    lazystream [OPTIONS]
+    lazystream [OPTIONS] <SUBCOMMAND>
 
 FLAGS:
-    -h, --help       
-            Prints help information
-
-    -V, --version    
-            Prints version information
-
+    -h, --help       Prints help information
+    -V, --version    Prints version information
 
 OPTIONS:
-        --date <YYYYMMDD>                              
-            Specify what date to generate stream links for, defaults to today
+        --date <YYYYMMDD>      Specify what date to use for games, defaults to today
+        --cdn <cdn>            Specify which CDN to use: 'akc' or 'l3c' [default: akc]
+        --quality <quality>    Specify a quality to use, otherwise stream will be adaptive. Doesn't currently affect
+                               recording
 
-        --cdn <cdn>                                    
-            Specify which CDN to use: 'akc' or 'l3c' [default: akc]
+SUBCOMMANDS:
+    select      Select stream link via command line
+    generate    Generate an xmltv and/or playlist formatted output for all games
+    record      Record a game, requires StreamLink
+    help        Prints this message or the help of the given subcommand(s)
 
-        --playlist-output <playlist-output>            
-            Generate a .m3u playlist file for all games
-
-        --quality <quality>                            
-            Specify a quality to use, otherwise stream will be adaptive.
-            
-            Must be one of: '720p60', '720p', '540p', '504p', '360p', '288p', '224p', '216p'
-        --xmltv-output <xmltv-output>
-            Generate a .xml XMLTV file for all games with corresponding .m3u playlist file
-
-        --xmltv-start-channel <xmltv-start-channel>
-            Specify the starting channel number for the XMLVTV output [default: 1000]
-
-❯ lazystream
+❯ lazystream select
 
  |        \   __  /\ \   / ___|__ __|  _ \  ____|    \     \  | 
  |       _ \     /  \   /\___ \   |   |   | __|     _ \   |\/ | 
