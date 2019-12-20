@@ -6,6 +6,7 @@ Easily get LazyMan stream links, output directly or to m3u / xmltv formats.
 - Defaults to grabbing the current days games. `--date YYYYMMDD` can be specified for a certain day. 
 - xmltv and m3u playlist formats can be generated for all games using the `generate` subcommand
 - Games can be recorded using the `record` subcommand. This requires StreamLink is installed and in your path. If a game is live, you can use the `--restart` flag to start recording from the beginning of the stream. Currently `best` quality is used with StreamLink, the `--quality` option doesn't affect this, for now.
+- Games can be casted to a chromecast using the `cast` subcommand. In addition to Streamlink, VLC is required to cast the stream.
 
 ```
 ❯ lazystream --help
