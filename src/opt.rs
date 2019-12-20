@@ -11,6 +11,7 @@ pub fn parse_opts() -> OutputType {
         Command::Select { .. } => OutputType::Select(opts),
         Command::Generate { .. } => OutputType::Generate(opts),
         Command::Record { .. } => OutputType::Record(opts),
+        Command::Cast { .. } => OutputType::Cast(opts),
     }
 }
 
@@ -62,11 +63,20 @@ pub enum Command {
         #[structopt(subcommand)]
         command: RecordCommand,
     },
+    #[structopt(usage = "lazystream cast <SUBCOMMAND> [OPTIONS]", setting = DeriveDisplayOrder)]
+    /// Cast a game, requires StreamLink and VLC
+    ///
+    /// Game can be chosen from command line with 'select' subcommand or supplied
+    /// in advanced with 'team' subcommand
+    Cast {
+        #[structopt(subcommand)]
+        command: CastCommand,
+    },
 }
 
 #[derive(StructOpt, Debug, PartialEq, Clone)]
 pub enum RecordCommand {
-    #[structopt(usage = "lazystream record select <OUTPUT DIR> [--restart] [OPTIONS]")]
+    #[structopt(usage = "lazystream record select <OUTPUT DIR> [--restart --proxy <PROXY>] [OPTIONS]")]
     /// Select a game from the command line to record to FILE
     Select {
         #[structopt(name = "OUTPUT DIR", parse(from_os_str))]
@@ -75,9 +85,12 @@ pub enum RecordCommand {
         #[structopt(long)]
         /// If live, restart the stream from the beginning and record the entire thing
         restart: bool,
+        #[structopt(long)]
+        /// Proxy server address to be passed to Streamlink
+        proxy: String,
     },
     #[structopt(
-        usage = "lazystream record team <TEAM> <OUTPUT DIR> [--restart --feed-type <feed-type>] [OPTIONS]"
+        usage = "lazystream record team <TEAM> <OUTPUT DIR> [--restart --feed-type <feed-type> --proxy <PROXY>] [OPTIONS]"
     )]
     /// Specify team abbreviation. If / when stream is available, will record to FILE.
     ///
@@ -101,6 +114,53 @@ pub enum RecordCommand {
         /// Specify the feed type to download. Will default to supplied
         /// team's applicable Home / Away feed
         feed_type: Option<FeedType>,
+        #[structopt(long)]
+        /// Proxy server address to be passed to Streamlink
+        proxy: String,
+    },
+}
+
+#[derive(StructOpt, Debug, PartialEq, Clone)]
+pub enum CastCommand {
+    #[structopt(
+        usage = "lazystream cast select <CHROMECAST IP> [--restart --proxy <PROXY>] [OPTIONS]"
+    )]
+    /// Select a game from the command line to cast to CHROMECAST IP
+    Select {
+        #[structopt(name = "CHROMECAST IP")]
+        /// IP of the Chromecast
+        cast_ip: String,
+        #[structopt(long)]
+        /// If live, restart the stream from the beginning and cast the entire thing
+        restart: bool,
+        #[structopt(long)]
+        /// Proxy server address to be passed to Streamlink
+        proxy: String,
+    },
+    #[structopt(
+        usage = "lazystream cast team <TEAM> <CHROMECAST IP> [--restart --feed-type <feed-type> --proxy <PROXY>] [OPTIONS]"
+    )]
+    /// Specify team abbreviation. If / when stream is available, will cast to CHROMECAST IP
+    ///
+    /// Example: 'lazystream cast team VGK 192.16.0.100' will cast the stream for the
+    /// Golden Knights game to the Chromecast at 192.168.0.100.
+    Team {
+        #[structopt(name = "TEAM")]
+        /// Team abbreviation
+        team_abbrev: String,
+        #[structopt(name = "CHROMECAST IP")]
+        /// IP of the Chromecast
+        cast_ip: String,
+        #[structopt(long)]
+        /// If live, restart the stream from the beginning and cast the entire thing
+        restart: bool,
+        #[structopt(long, parse(try_from_str))]
+        /// Specify the feed type to cast. Will default to supplied
+        /// team's applicable Home / Away feed
+        feed_type: Option<FeedType>,
+        #[structopt(long)]
+        /// Proxy server address to be passed to Streamlink
+        proxy: String,
     },
 }
 
@@ -129,6 +189,7 @@ pub enum OutputType {
     Generate(Opt),
     Select(Opt),
     Record(Opt),
+    Cast(Opt),
 }
 
 fn parse_date(src: &str) -> Result<NaiveDate, ParseError> {

@@ -2,6 +2,7 @@ use crate::opt::OutputType;
 use colored::Colorize;
 use failure::Error;
 
+mod cast;
 mod generate;
 mod opt;
 mod record;
@@ -24,6 +25,7 @@ fn main() {
         OutputType::Select(opts) => crate::select::run(opts),
         OutputType::Generate(opts) => crate::generate::run(opts),
         OutputType::Record(opts) => crate::record::run(opts),
+        OutputType::Cast(opts) => crate::cast::run(opts),
     }
 }
 
