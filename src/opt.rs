@@ -1,7 +1,8 @@
 use crate::VERSION;
 use chrono::{format::ParseError, NaiveDate};
 use failure::{bail, Error};
-use std::{path::PathBuf, str::FromStr};
+use http::Uri;
+use std::{net::Ipv4Addr, path::PathBuf, str::FromStr};
 use structopt::{clap::AppSettings::DeriveDisplayOrder, StructOpt};
 
 pub fn parse_opts() -> OutputType {
@@ -76,7 +77,9 @@ pub enum Command {
 
 #[derive(StructOpt, Debug, PartialEq, Clone)]
 pub enum RecordCommand {
-    #[structopt(usage = "lazystream record select <OUTPUT DIR> [--restart --proxy <PROXY>] [OPTIONS]")]
+    #[structopt(
+        usage = "lazystream record select <OUTPUT DIR> [--restart --proxy <PROXY>] [OPTIONS]"
+    )]
     /// Select a game from the command line to record to FILE
     Select {
         #[structopt(name = "OUTPUT DIR", parse(from_os_str))]
@@ -85,9 +88,9 @@ pub enum RecordCommand {
         #[structopt(long)]
         /// If live, restart the stream from the beginning and record the entire thing
         restart: bool,
-        #[structopt(long)]
+        #[structopt(long, parse(try_from_str))]
         /// Proxy server address to be passed to Streamlink
-        proxy: String,
+        proxy: Option<Uri>,
     },
     #[structopt(
         usage = "lazystream record team <TEAM> <OUTPUT DIR> [--restart --feed-type <feed-type> --proxy <PROXY>] [OPTIONS]"
@@ -114,9 +117,9 @@ pub enum RecordCommand {
         /// Specify the feed type to download. Will default to supplied
         /// team's applicable Home / Away feed
         feed_type: Option<FeedType>,
-        #[structopt(long)]
+        #[structopt(long, parse(try_from_str))]
         /// Proxy server address to be passed to Streamlink
-        proxy: String,
+        proxy: Option<Uri>,
     },
 }
 
@@ -127,15 +130,15 @@ pub enum CastCommand {
     )]
     /// Select a game from the command line to cast to CHROMECAST IP
     Select {
-        #[structopt(name = "CHROMECAST IP")]
+        #[structopt(name = "CHROMECAST IP", parse(try_from_str))]
         /// IP of the Chromecast
-        cast_ip: String,
+        cast_ip: Ipv4Addr,
         #[structopt(long)]
         /// If live, restart the stream from the beginning and cast the entire thing
         restart: bool,
-        #[structopt(long)]
+        #[structopt(long, parse(try_from_str))]
         /// Proxy server address to be passed to Streamlink
-        proxy: String,
+        proxy: Option<Uri>,
     },
     #[structopt(
         usage = "lazystream cast team <TEAM> <CHROMECAST IP> [--restart --feed-type <feed-type> --proxy <PROXY>] [OPTIONS]"
@@ -148,9 +151,9 @@ pub enum CastCommand {
         #[structopt(name = "TEAM")]
         /// Team abbreviation
         team_abbrev: String,
-        #[structopt(name = "CHROMECAST IP")]
+        #[structopt(name = "CHROMECAST IP", parse(try_from_str))]
         /// IP of the Chromecast
-        cast_ip: String,
+        cast_ip: Ipv4Addr,
         #[structopt(long)]
         /// If live, restart the stream from the beginning and cast the entire thing
         restart: bool,
@@ -158,9 +161,9 @@ pub enum CastCommand {
         /// Specify the feed type to cast. Will default to supplied
         /// team's applicable Home / Away feed
         feed_type: Option<FeedType>,
-        #[structopt(long)]
+        #[structopt(long, parse(try_from_str))]
         /// Proxy server address to be passed to Streamlink
-        proxy: String,
+        proxy: Option<Uri>,
     },
 }
 

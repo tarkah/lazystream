@@ -5,6 +5,8 @@ use crate::{
 };
 use async_std::{process, task};
 use failure::{bail, format_err, Error, ResultExt};
+use http::Uri;
+use std::{net::Ipv4Addr, time::Duration};
 
 pub fn run(opts: Opt) {
     task::block_on(async {
@@ -35,7 +37,7 @@ async fn process(opts: Opt) -> Result<(), Error> {
                 proxy,
             } => {
                 let (_, stream) = crate::select::process(&opts, true).await?;
-                (stream, cast_ip.clone(), *restart, proxy.clone())
+                (stream, *cast_ip, *restart, proxy.clone())
             }
             CastCommand::Team {
                 team_abbrev,
@@ -48,17 +50,22 @@ async fn process(opts: Opt) -> Result<(), Error> {
                 lazy_stream.check_team_abbrev(&team_abbrev)?;
                 println!("Found matching team for {}", team_abbrev);
                 if let Some(mut game) = lazy_stream.game_with_team_abbrev(&team_abbrev) {
+                    println!("Game found for today");
                     let stream = game
                         .stream_with_feed_or_default(feed_type, team_abbrev)
                         .await?;
                     println!("Using stream feed {}", stream.feed_type);
-                    (stream, cast_ip.clone(), *restart, proxy.clone())
+                    (stream, *cast_ip, *restart, proxy.clone())
                 } else {
                     bail!("There are no games today for {}", team_abbrev);
                 }
             }
         };
 
+        while let Err(_) = stream.master_link(&opts.cdn).await {
+            println!("Stream not available yet, will check again soon...");
+            task::sleep(Duration::from_secs(60 * 30)).await;
+        }
         let link = stream.master_link(&opts.cdn).await?;
 
         task::spawn_blocking(move || cast(link, cast_ip, restart, proxy)).await?;
@@ -67,7 +74,7 @@ async fn process(opts: Opt) -> Result<(), Error> {
     Ok(())
 }
 
-fn cast(link: String, cast_ip: String, restart: bool, proxy: String) -> Result<(), Error> {
+fn cast(link: String, cast_ip: Ipv4Addr, restart: bool, proxy: Option<Uri>) -> Result<(), Error> {
     println!("Casting to {}\n\n============================\n", cast_ip);
 
     let cmd = if cfg!(target_os = "windows") {
@@ -109,9 +116,11 @@ fn cast(link: String, cast_ip: String, restart: bool, proxy: String) -> Result<(
         args.push("--hls-live-restart");
     }
 
-    if proxy != "" {
+    let mut _proxy = String::new();
+    if let Some(ref proxy) = proxy {
+        _proxy = proxy.to_string();
         args.push("--https-proxy");
-        args.push(proxy.as_str());
+        args.push(&_proxy);
     }
 
     let result = std::process::Command::new(cmd)

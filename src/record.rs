@@ -6,7 +6,8 @@ use crate::{
 use async_std::{process, task};
 use chrono::Local;
 use failure::{bail, format_err, Error, ResultExt};
-use std::{path::PathBuf, process::Stdio};
+use http::Uri;
+use std::{path::PathBuf, process::Stdio, time::Duration};
 
 pub fn run(opts: Opt) {
     task::block_on(async {
@@ -26,17 +27,22 @@ async fn process(opts: Opt) -> Result<(), Error> {
         ))?;
 
     if let Command::Record { command } = &opts.command {
-        let (game, mut stream, output, restart) = match command {
-            RecordCommand::Select { output, restart } => {
+        let (game, mut stream, output, restart, proxy) = match command {
+            RecordCommand::Select {
+                output,
+                restart,
+                proxy,
+            } => {
                 check_output(&output)?;
                 let (game, stream) = crate::select::process(&opts, true).await?;
-                (game, stream, output.clone(), *restart)
+                (game, stream, output.clone(), *restart, proxy.clone())
             }
             RecordCommand::Team {
                 team_abbrev,
                 restart,
                 feed_type,
                 output,
+                proxy,
             } => {
                 check_output(&output)?;
 
@@ -44,20 +50,25 @@ async fn process(opts: Opt) -> Result<(), Error> {
                 lazy_stream.check_team_abbrev(&team_abbrev)?;
                 println!("Found matching team for {}", team_abbrev);
                 if let Some(mut game) = lazy_stream.game_with_team_abbrev(&team_abbrev) {
+                    println!("Game found for today");
                     let stream = game
                         .stream_with_feed_or_default(feed_type, team_abbrev)
                         .await?;
                     println!("Using stream feed {}", stream.feed_type);
-                    (game, stream, output.clone(), *restart)
+                    (game, stream, output.clone(), *restart, proxy.clone())
                 } else {
                     bail!("There are no games today for {}", team_abbrev);
                 }
             }
         };
 
+        while let Err(_) = stream.master_link(&opts.cdn).await {
+            println!("Stream not available yet, will check again soon...");
+            task::sleep(Duration::from_secs(60 * 30)).await;
+        }
         let link = stream.master_link(&opts.cdn).await?;
 
-        task::spawn_blocking(move || record(link, game, stream, output, restart)).await?;
+        task::spawn_blocking(move || record(link, game, stream, output, restart, proxy)).await?;
     }
 
     Ok(())
@@ -69,6 +80,7 @@ fn record(
     stream: Stream,
     mut path: PathBuf,
     restart: bool,
+    proxy: Option<Uri>,
 ) -> Result<(), Error> {
     println!("Recording with StreamLink...\n\n============================\n");
     let filename = format!(
@@ -88,8 +100,10 @@ fn record(
         "streamlink"
     };
 
+    let hls_link = format!("hlsvariant://{}", link);
+
     let mut args = vec![
-        link.as_str(),
+        hls_link.as_str(),
         "best",
         "--force",
         "--http-no-ssl-verify",
@@ -103,6 +117,13 @@ fn record(
 
     if restart {
         args.push("--hls-live-restart");
+    }
+
+    let mut _proxy = String::new();
+    if let Some(ref proxy) = proxy {
+        _proxy = proxy.to_string();
+        args.push("--https-proxy");
+        args.push(&_proxy);
     }
 
     let result = std::process::Command::new(cmd)
