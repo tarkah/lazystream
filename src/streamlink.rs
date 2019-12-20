@@ -184,7 +184,7 @@ fn streamlink(
     };
 
     let vlc_cmd = if cfg!(target_os = "windows") {
-        "cvlc.exe"
+        "vlc.exe"
     } else {
         "cvlc"
     };
@@ -235,12 +235,21 @@ fn streamlink(
             args.push(_arg.as_str());
         }
         StreamlinkCommand::Cast { cast_ip } => {
-            _arg = format!(
-                "{} --sout \"#chromecast\" \
-                 --sout-chromecast-ip={} \
-                 --demux-filter=demux_chromecast",
-                vlc_cmd, cast_ip,
-            );
+            _arg = if cfg!(target_os = "windows") {
+                format!(
+                    "{} -I dummy --sout \"#chromecast\" \
+                     --sout-chromecast-ip={} \
+                     --demux-filter=demux_chromecast",
+                    vlc_cmd, cast_ip,
+                )
+            } else {
+                format!(
+                    "{} --sout \"#chromecast\" \
+                     --sout-chromecast-ip={} \
+                     --demux-filter=demux_chromecast",
+                    vlc_cmd, cast_ip,
+                )
+            };
 
             args.push("--player");
             args.push(_arg.as_str());
@@ -287,17 +296,15 @@ fn check_streamlink() -> Result<(), Error> {
 }
 
 fn check_vlc() -> Result<(), Error> {
-    let cmd = if cfg!(target_os = "windows") {
-        "cvlc.exe"
-    } else {
-        "cvlc"
-    };
+    if !cfg!(target_os = "windows") {
+        let cmd = "cvlc";
 
-    let output = std::process::Command::new(cmd).arg("--version").output()?;
-    let std_out = String::from_utf8(output.stdout)?;
+        let output = std::process::Command::new(cmd).arg("--version").output()?;
+        let std_out = String::from_utf8(output.stdout)?;
 
-    if !output.status.success() && &std_out[0..3] != "VLC" {
-        bail!("Couldn't run VLC");
+        if !output.status.success() && &std_out[0..3] != "VLC" {
+            bail!("Couldn't run VLC");
+        }
     }
 
     Ok(())
