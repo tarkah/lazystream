@@ -19,7 +19,7 @@ pub fn parse_opts() -> OutputType {
 #[derive(StructOpt, Debug, Clone)]
 #[structopt(
     name = "lazystream",
-    about = "Easily get LazyMan stream links, output directly or to m3u / xmltv formats.",
+    about = "Easily get LazyMan stream links, output directly or to m3u / xmltv formats. Streams can also be recorded or casted.",
     version = VERSION,
     author = "tarkah <admin@tarkah.dev>",
     setting = DeriveDisplayOrder,

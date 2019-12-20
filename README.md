@@ -12,7 +12,7 @@ Easily get LazyMan stream links, output directly or to m3u / xmltv formats.
 
 lazystream 1.6.0
 tarkah <admin@tarkah.dev>
-Easily get LazyMan stream links, output directly or to m3u / xmltv formats.
+Easily get LazyMan stream links, output directly or to m3u / xmltv formats. Streams can also be recorded or casted.
 
 USAGE:
     lazystream [OPTIONS] <SUBCOMMAND>
@@ -31,6 +31,7 @@ SUBCOMMANDS:
     select      Select stream link via command line
     generate    Generate an xmltv and/or playlist formatted output for all games
     record      Record a game, requires StreamLink
+    cast        Cast a game, requires StreamLink and VLC
     help        Prints this message or the help of the given subcommand(s)
 
 ❯ lazystream select
