@@ -80,7 +80,7 @@ pub enum RecordCommand {
     #[structopt(
         usage = "lazystream record select <OUTPUT DIR> [--restart --proxy <PROXY>] [OPTIONS]"
     )]
-    /// Select a game from the command line to record to FILE
+    /// Select a game from the command line to record to OUTPUT DIR
     Select {
         #[structopt(name = "OUTPUT DIR", parse(from_os_str))]
         /// Directory to save game recordings
@@ -95,7 +95,7 @@ pub enum RecordCommand {
     #[structopt(
         usage = "lazystream record team <TEAM> <OUTPUT DIR> [--restart --feed-type <feed-type> --proxy <PROXY>] [OPTIONS]"
     )]
-    /// Specify team abbreviation. If / when stream is available, will record to FILE.
+    /// Specify team abbreviation. If / when stream is available, will record to OUTPUT DIR.
     ///
     /// Example: 'lazystream record team VGK /tmp/game.mp4' will download the stream for the
     /// Golden Knights game to /tmp/game.mp4.

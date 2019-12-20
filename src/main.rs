@@ -2,12 +2,11 @@ use crate::opt::OutputType;
 use colored::Colorize;
 use failure::Error;
 
-mod cast;
 mod generate;
 mod opt;
-mod record;
 mod select;
 mod stream;
+mod streamlink;
 
 const VERSION: &str = "1.6.0";
 const HOST: &str = "http://nhl.freegamez.ga";
@@ -24,8 +23,8 @@ fn main() {
     match output_type {
         OutputType::Select(opts) => crate::select::run(opts),
         OutputType::Generate(opts) => crate::generate::run(opts),
-        OutputType::Record(opts) => crate::record::run(opts),
-        OutputType::Cast(opts) => crate::cast::run(opts),
+        OutputType::Record(opts) => crate::streamlink::run(opts),
+        OutputType::Cast(opts) => crate::streamlink::run(opts),
     }
 }
 
