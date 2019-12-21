@@ -5,7 +5,7 @@ authors = ["tarkah <admin@tarkah.dev>"]
 edition = "2018"
 
 [dependencies]
-stats-api = { git = "https://github.com/tarkah/stats-api", rev = "f77e524e65d3d973ddf6f883603ad5670b10bffd" }
+stats-api = { git = "https://github.com/tarkah/stats-api", rev = "f8058c366366c23457819a4a05d34ad61ae26bcd" }
 
 failure = "0.1"
 chrono = "0.4"
@@ -13,9 +13,9 @@ read_input = "0.8"
 structopt = "0.3"
 colored = "1.9"
 
-futures-preview = "=0.3.0-alpha.19"
+futures = "0.3.1"
 async-std = { version = "1.0", features = ['unstable'] }
 
 http = "0.1"
 curl = { version = "0.4", default-features=false, features = ["static-curl", "static-ssl", "http2"] }
-http-client = { version = "1.0", features = ["native_client"] }
+http-client = { version = "1.1.1", features = ["native_client"] }
