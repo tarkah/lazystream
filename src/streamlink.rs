@@ -7,6 +7,9 @@ use async_std::{process, task};
 use chrono::Local;
 use failure::{bail, format_err, Error, ResultExt};
 use http::Uri;
+use mdns::RecordKind;
+use read_input::prelude::*;
+use std::collections::HashMap;
 use std::{net::Ipv4Addr, path::PathBuf, process::Stdio, time::Duration};
 
 pub fn run(opts: Opt) {
@@ -32,6 +35,7 @@ async fn process(opts: Opt) -> Result<(), Error> {
         _ => bail!("Wrong command for module"),
     };
 
+    println!();
     while let Err(_) = stream.master_link(&opts.cdn).await {
         println!("Stream not available yet, will check again soon...");
         task::sleep(Duration::from_secs(60 * 30)).await;
@@ -99,10 +103,15 @@ async fn process_cast(
     ))?;
 
     match command {
-        CastCommand::Select { restart, proxy, .. } => {
+        CastCommand::Select { restart, proxy } => {
             let (game, stream) = crate::select::process(opts, true).await?;
 
-            let streamlink_command = StreamlinkCommand::from(command);
+            let cast_devices = find_cast_devices()?;
+            let cast_ip = select_cast_device(cast_devices)?;
+            println!("\nUsing cast device {}\n", cast_ip);
+
+            let streamlink_command = StreamlinkCommand::cast_with_ip(cast_ip);
+
             Ok((game, stream, streamlink_command, *restart, proxy.clone()))
         }
         CastCommand::Team {
@@ -138,6 +147,12 @@ enum StreamlinkCommand {
     Cast { cast_ip: Ipv4Addr },
 }
 
+impl StreamlinkCommand {
+    fn cast_with_ip(addr: Ipv4Addr) -> Self {
+        StreamlinkCommand::Cast { cast_ip: addr }
+    }
+}
+
 impl From<&RecordCommand> for StreamlinkCommand {
     fn from(cmd: &RecordCommand) -> Self {
         match cmd {
@@ -154,7 +169,9 @@ impl From<&RecordCommand> for StreamlinkCommand {
 impl From<&CastCommand> for StreamlinkCommand {
     fn from(cmd: &CastCommand) -> Self {
         match cmd {
-            CastCommand::Select { cast_ip, .. } => StreamlinkCommand::Cast { cast_ip: *cast_ip },
+            CastCommand::Select { .. } => StreamlinkCommand::Cast {
+                cast_ip: [0, 0, 0, 0].into(),
+            },
             CastCommand::Team { cast_ip, .. } => StreamlinkCommand::Cast { cast_ip: *cast_ip },
         }
     }
@@ -328,4 +345,63 @@ fn check_output(directory: &PathBuf) -> Result<(), Error> {
     }
 
     Ok(())
+}
+
+const SERVICE_NAME: &str = "_googlecast._tcp.local";
+
+#[allow(clippy::unnecessary_unwrap)]
+fn find_cast_devices() -> Result<HashMap<Ipv4Addr, String>, Error> {
+    let mut devices = HashMap::new();
+
+    for response in mdns::discover::all(SERVICE_NAME)
+        .map_err(|_| format_err!("mDNS discovery failed"))?
+        .timeout(Duration::from_secs(2))
+    {
+        let response = response.map_err(|_| format_err!("mDNS response failed"))?;
+
+        let mut ip = None;
+        let mut name = None;
+        for record in response.records() {
+            match record.kind {
+                RecordKind::A(addr) => ip = Some(addr),
+                RecordKind::TXT(ref data) => {
+                    for item in data {
+                        if &item[0..3] == "fn=" {
+                            name = Some(item[3..].to_owned());
+                        }
+                    }
+                }
+                _ => {}
+            }
+        }
+
+        if ip.is_some() && name.is_some() {
+            devices.insert(ip.unwrap(), name.unwrap());
+        }
+    }
+
+    Ok(devices)
+}
+
+fn select_cast_device(devices: HashMap<Ipv4Addr, String>) -> Result<Ipv4Addr, Error> {
+    if devices.is_empty() {
+        bail!("No castable devices found on LAN");
+    }
+
+    println!("\nPick a cast device...\n");
+
+    let mut device_addrs = vec![];
+    for (idx, (ip, name)) in devices.iter().enumerate() {
+        println!("{}) {} - {}", idx + 1, ip, name);
+        device_addrs.push(ip);
+    }
+
+    let device_count = devices.len();
+    let device_choice = input::<usize>()
+        .msg("\n>>> ")
+        .add_test(move |input| *input > 0 && *input <= device_count)
+        .get();
+    let addrs = device_addrs[(device_choice - 1)];
+
+    Ok(*addrs)
 }

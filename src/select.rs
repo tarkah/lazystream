@@ -79,9 +79,9 @@ pub async fn process(opts: &Opt, need_return: bool) -> Result<(Game, Stream), Er
 
     let host_link = stream.host_link(&lazy_stream.opts.cdn);
 
-    println!();
     let cdn = &lazy_stream.opts.cdn;
     if !need_return {
+        println!();
         if let Some(ref quality) = lazy_stream.opts.quality {
             let quality_link = stream.quality_link(cdn, quality).await?;
             println!("{}", quality_link);

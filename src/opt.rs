@@ -125,14 +125,9 @@ pub enum RecordCommand {
 
 #[derive(StructOpt, Debug, PartialEq, Clone)]
 pub enum CastCommand {
-    #[structopt(
-        usage = "lazystream cast select <CHROMECAST IP> [--restart --proxy <PROXY>] [OPTIONS]"
-    )]
-    /// Select a game from the command line to cast to CHROMECAST IP
+    #[structopt(usage = "lazystream cast select [--restart --proxy <PROXY>] [OPTIONS]")]
+    /// Select a game and chromecast device from the command line to cast to
     Select {
-        #[structopt(name = "CHROMECAST IP", parse(try_from_str))]
-        /// IP of the Chromecast
-        cast_ip: Ipv4Addr,
         #[structopt(long)]
         /// If live, restart the stream from the beginning and cast the entire thing
         restart: bool,
