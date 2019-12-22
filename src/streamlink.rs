@@ -9,8 +9,9 @@ use failure::{bail, format_err, Error, ResultExt};
 use http::Uri;
 use mdns::RecordKind;
 use read_input::prelude::*;
-use std::collections::HashMap;
-use std::{net::Ipv4Addr, path::PathBuf, process::Stdio, time::Duration};
+use std::{
+    collections::HashMap, io::Write, net::Ipv4Addr, path::PathBuf, process::Stdio, time::Duration,
+};
 
 pub fn run(opts: Opt) {
     task::block_on(async {
@@ -106,7 +107,13 @@ async fn process_cast(
         CastCommand::Select { restart, proxy } => {
             let (game, stream) = crate::select::process(opts, true).await?;
 
-            let cast_devices = find_cast_devices()?;
+            let cast_devices = task::spawn_blocking(|| {
+                print!("\nSearching for cast devices...");
+                let _ = std::io::stdout().flush();
+                find_cast_devices()
+            })
+            .await?;
+
             let cast_ip = select_cast_device(cast_devices)?;
             println!("\nUsing cast device {}\n", cast_ip);
 
@@ -388,7 +395,7 @@ fn select_cast_device(devices: HashMap<Ipv4Addr, String>) -> Result<Ipv4Addr, Er
         bail!("No castable devices found on LAN");
     }
 
-    println!("\nPick a cast device...\n");
+    println!("\rPick a cast device...        \n");
 
     let mut device_addrs = vec![];
     for (idx, (ip, name)) in devices.iter().enumerate() {
