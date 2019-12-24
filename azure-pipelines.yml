@@ -11,13 +11,13 @@ jobs:
       matrix:
         windows-stable:
           imageName: "vs2017-win2016"
-          rustup_toolchain: 1.39.0
+          rustup_toolchain: 1.40.0
         linux-stable:
           imageName: "ubuntu-latest"
-          rustup_toolchain: 1.39.0
+          rustup_toolchain: 1.40.0
         macos-stable:
           imageName: "macOS-latest"
-          rustup_toolchain: 1.39.0
+          rustup_toolchain: 1.40.0
 
     pool:
       vmImage: $(imageName)
@@ -45,15 +45,15 @@ jobs:
       matrix:
         windows-stable:
           imageName: "vs2017-win2016"
-          rustup_toolchain: 1.39.0
+          rustup_toolchain: 1.40.0
           target: "x86_64-pc-windows-msvc"
         linux-stable:
           imageName: "ubuntu-latest"
-          rustup_toolchain: 1.39.0
+          rustup_toolchain: 1.40.0
           target: "x86_64-unknown-linux-gnu"
         macos-stable:
           imageName: "macOS-latest"
-          rustup_toolchain: 1.39.0
+          rustup_toolchain: 1.40.0
           target: "x86_64-apple-darwin"
 
     pool:
@@ -83,28 +83,28 @@ jobs:
       matrix:
         windows-stable:
           imageName: "vs2017-win2016"
-          rustup_toolchain: 1.39.0
+          rustup_toolchain: 1.40.0
           target: "x86_64-pc-windows-msvc"
           docker: false
         linux-stable:
           imageName: "ubuntu-latest"
-          rustup_toolchain: 1.39.0
+          rustup_toolchain: 1.40.0
           target: "x86_64-unknown-linux-gnu"
           docker: false
         macos-stable:
           imageName: "macOS-latest"
-          rustup_toolchain: 1.39.0
+          rustup_toolchain: 1.40.0
           target: "x86_64-apple-darwin"
           docker: false
         armv7-stable:
-          imageName: 'ubuntu-latest'
-          rustup_toolchain: 1.39.0
-          target: 'armv7-unknown-linux-gnueabihf'
+          imageName: "ubuntu-latest"
+          rustup_toolchain: 1.40.0
+          target: "armv7-unknown-linux-gnueabihf"
           docker: true
         aarch64-stable:
-          imageName: 'ubuntu-latest'
-          rustup_toolchain: 1.39.0
-          target: 'aarch64-unknown-linux-gnu'
+          imageName: "ubuntu-latest"
+          rustup_toolchain: 1.40.0
+          target: "aarch64-unknown-linux-gnu"
           docker: true
 
     pool:
@@ -141,11 +141,11 @@ jobs:
         condition: eq( variables['docker'], 'false' )
 
       - script: |
-         docker build -t lazystream:$TARGET ./ci/$TARGET/
+          docker build -t lazystream:$TARGET ./ci/$TARGET/
         displayName: Cross Setup Docker
         condition: eq( variables['docker'], 'true' )
       - script: |
-         docker run -v "$(pwd):/source" lazystream:$TARGET cargo build --release --manifest-path /source/Cargo.toml --target $TARGET
+          docker run -v "$(pwd):/source" lazystream:$TARGET cargo build --release --manifest-path /source/Cargo.toml --target $TARGET
         displayName: Cross Build
         condition: eq( variables['docker'], 'true' )
 
