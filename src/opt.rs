@@ -11,6 +11,7 @@ pub fn parse_opts() -> OutputType {
     match opts.command {
         Command::Select { .. } => OutputType::Select(opts),
         Command::Generate { .. } => OutputType::Generate(opts),
+        Command::Play { .. } => OutputType::Play(opts),
         Command::Record { .. } => OutputType::Record(opts),
         Command::Cast { .. } => OutputType::Cast(opts),
     }
@@ -55,6 +56,15 @@ pub enum Command {
         #[structopt(subcommand)]
         command: GenerateCommand,
     },
+    #[structopt(usage = "lazystream play <SUBCOMMAND> [OPTIONS]", setting = DeriveDisplayOrder)]
+    /// Play a game with VLC, requires StreamLink and VLC
+    ///
+    /// Game can be chosen from command line with 'select' subcommand or supplied
+    /// in advanced with 'team' subcommand
+    Play {
+        #[structopt(subcommand)]
+        command: PlayCommand,
+    },
     #[structopt(usage = "lazystream record <SUBCOMMAND> [OPTIONS]", setting = DeriveDisplayOrder)]
     /// Record a game, requires StreamLink
     ///
@@ -72,6 +82,46 @@ pub enum Command {
     Cast {
         #[structopt(subcommand)]
         command: CastCommand,
+    },
+}
+
+#[derive(StructOpt, Debug, PartialEq, Clone)]
+pub enum PlayCommand {
+    #[structopt(usage = "lazystream play select [--restart --proxy <PROXY>] [OPTIONS]")]
+    /// Select a game from the command line to play in VLC
+    Select {
+        #[structopt(long)]
+        /// If live, restart the stream from the beginning
+        restart: bool,
+        #[structopt(long, parse(try_from_str))]
+        /// Proxy server address to be passed to Streamlink
+        proxy: Option<Uri>,
+    },
+    #[structopt(
+        usage = "lazystream play team <TEAM> [--restart --feed-type <feed-type> --proxy <PROXY>] [OPTIONS]"
+    )]
+    /// Specify team abbreviation. If / when stream is available, will play in VLC
+    ///
+    /// Example: 'lazystream play team VGK' will play the stream for the
+    /// Golden Knights game in VLC.
+    ///
+    /// The program will stay running if a game is scheduled for the day, but stream is not yet
+    /// available. Program will periodically check for the stream availability and once live,
+    /// will pass that stream to VLC to play.
+    Team {
+        #[structopt(name = "TEAM")]
+        /// Team abbreviation
+        team_abbrev: String,
+        #[structopt(long)]
+        /// If live, restart the stream from the beginning and record the entire thing
+        restart: bool,
+        #[structopt(long, parse(try_from_str))]
+        /// Specify the feed type to download. Will default to supplied
+        /// team's applicable Home / Away feed
+        feed_type: Option<FeedType>,
+        #[structopt(long, parse(try_from_str))]
+        /// Proxy server address to be passed to Streamlink
+        proxy: Option<Uri>,
     },
 }
 
@@ -186,6 +236,7 @@ pub enum GenerateCommand {
 pub enum OutputType {
     Generate(Opt),
     Select(Opt),
+    Play(Opt),
     Record(Opt),
     Cast(Opt),
 }

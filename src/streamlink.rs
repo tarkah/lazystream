@@ -1,6 +1,6 @@
 use crate::{
     log_error,
-    opt::{CastCommand, Command, Opt, RecordCommand},
+    opt::{CastCommand, Command, Opt, PlayCommand, RecordCommand},
     stream::{Game, LazyStream, Stream},
 };
 use async_std::{process, task};
@@ -31,6 +31,7 @@ async fn process(opts: Opt) -> Result<(), Error> {
         ))?;
 
     let (game, mut stream, command, restart, proxy) = match &opts.command {
+        Command::Play { command } => process_play(&opts, command).await?,
         Command::Record { command } => process_record(&opts, command).await?,
         Command::Cast { command } => process_cast(&opts, command).await?,
         _ => bail!("Wrong command for module"),
@@ -46,6 +47,44 @@ async fn process(opts: Opt) -> Result<(), Error> {
     task::spawn_blocking(move || streamlink(link, game, stream, command, restart, proxy)).await?;
 
     Ok(())
+}
+
+async fn process_play(
+    opts: &Opt,
+    command: &PlayCommand,
+) -> Result<(Game, Stream, StreamlinkCommand, bool, Option<Uri>), Error> {
+    match command {
+        PlayCommand::Select { restart, proxy } => {
+            let (game, stream) = crate::select::process(opts, true).await?;
+
+            let streamlink_command = StreamlinkCommand::from(command);
+            Ok((game, stream, streamlink_command, *restart, proxy.clone()))
+        }
+        PlayCommand::Team {
+            team_abbrev,
+            restart,
+            feed_type,
+            proxy,
+        } => {
+            let lazy_stream = LazyStream::new(opts).await?;
+            lazy_stream.check_team_abbrev(&team_abbrev)?;
+            println!("Found matching team for {}", team_abbrev);
+
+            if let Some(mut game) = lazy_stream.game_with_team_abbrev(&team_abbrev) {
+                println!("Game found for today");
+
+                let stream = game
+                    .stream_with_feed_or_default(feed_type, team_abbrev)
+                    .await?;
+                println!("Using stream feed {}", stream.feed_type);
+
+                let streamlink_command = StreamlinkCommand::from(command);
+                Ok((game, stream, streamlink_command, *restart, proxy.clone()))
+            } else {
+                bail!("There are no games today for {}", team_abbrev);
+            }
+        }
+    }
 }
 
 async fn process_record(
@@ -149,7 +188,9 @@ async fn process_cast(
     }
 }
 
+#[derive(PartialEq)]
 enum StreamlinkCommand {
+    Play,
     Record { output: PathBuf },
     Cast { cast_ip: Ipv4Addr },
 }
@@ -157,6 +198,12 @@ enum StreamlinkCommand {
 impl StreamlinkCommand {
     fn cast_with_ip(addr: Ipv4Addr) -> Self {
         StreamlinkCommand::Cast { cast_ip: addr }
+    }
+}
+
+impl From<&PlayCommand> for StreamlinkCommand {
+    fn from(_cmd: &PlayCommand) -> Self {
+        StreamlinkCommand::Play
     }
 }
 
@@ -193,6 +240,9 @@ fn streamlink(
     proxy: Option<Uri>,
 ) -> Result<(), Error> {
     match &command {
+        StreamlinkCommand::Play { .. } => {
+            println!("Passing game to VLC...\n\n============================\n")
+        }
         StreamlinkCommand::Record { .. } => {
             println!("Recording with StreamLink...\n\n============================\n")
         }
@@ -209,6 +259,8 @@ fn streamlink(
 
     let vlc_cmd = if cfg!(target_os = "windows") {
         "vlc.exe"
+    } else if command == StreamlinkCommand::Play {
+        "vlc"
     } else {
         "cvlc"
     };
@@ -241,6 +293,23 @@ fn streamlink(
 
     let mut _arg;
     match &mut command {
+        StreamlinkCommand::Play => {
+            let title = format!(
+                "{} @ {} - {} - {}",
+                game.away_team.name,
+                game.home_team.name,
+                stream.feed_type,
+                game.game_date
+                    .with_timezone(&Local)
+                    .format("%Y-%m-%d %-I:%M %p"),
+            );
+            _arg = title;
+
+            args.push("--player");
+            args.push(vlc_cmd);
+            args.push("--title");
+            args.push(_arg.as_str());
+        }
         StreamlinkCommand::Record { output } => {
             let filename = format!(
                 "{} {} @ {} {}.mp4",
@@ -291,6 +360,9 @@ fn streamlink(
     }
 
     match &command {
+        StreamlinkCommand::Play { .. } => {
+            println!("\n============================\n\nPlayback finshed")
+        }
         StreamlinkCommand::Record { .. } => {
             println!("\n============================\n\nRecording finshed")
         }

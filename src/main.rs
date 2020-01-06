@@ -23,6 +23,7 @@ fn main() {
     match output_type {
         OutputType::Select(opts) => crate::select::run(opts),
         OutputType::Generate(opts) => crate::generate::run(opts),
+        OutputType::Play(opts) => crate::streamlink::run(opts),
         OutputType::Record(opts) => crate::streamlink::run(opts),
         OutputType::Cast(opts) => crate::streamlink::run(opts),
     }

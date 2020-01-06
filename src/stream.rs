@@ -100,11 +100,9 @@ impl LazyStream {
         let tasks: Vec<_> = self
             .games
             .iter_mut()
-            .map(|game| {
-                async {
-                    game.resolve_streams_master_link(cdn).await;
-                    drop(game);
-                }
+            .map(|game| async {
+                game.resolve_streams_master_link(cdn).await;
+                drop(game);
             })
             .collect();
 
@@ -116,11 +114,9 @@ impl LazyStream {
         let tasks: Vec<_> = self
             .games
             .iter_mut()
-            .map(|game| {
-                async {
-                    game.resolve_streams_quality_link(cdn, quality).await;
-                    drop(game);
-                }
+            .map(|game| async {
+                game.resolve_streams_quality_link(cdn, quality).await;
+                drop(game);
             })
             .collect();
 
@@ -274,11 +270,9 @@ impl Game {
             .as_mut()
             .unwrap()
             .iter_mut()
-            .map(|(_, stream)| {
-                async {
-                    stream.resolve_master_link(cdn).await;
-                    drop(stream);
-                }
+            .map(|(_, stream)| async {
+                stream.resolve_master_link(cdn).await;
+                drop(stream);
             })
             .collect();
 
@@ -295,11 +289,9 @@ impl Game {
             .as_mut()
             .unwrap()
             .iter_mut()
-            .map(|(_, stream)| {
-                async {
-                    stream.resolve_quality_link(cdn, quality).await;
-                    drop(stream);
-                }
+            .map(|(_, stream)| async {
+                stream.resolve_quality_link(cdn, quality).await;
+                drop(stream);
             })
             .collect();
 
