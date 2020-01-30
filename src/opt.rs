@@ -28,7 +28,7 @@ pub fn parse_opts() -> OutputType {
 pub struct Opt {
     #[structopt(subcommand)]
     pub command: Command,
-    #[structopt(long, parse(try_from_str), default_value = Sport::Nhl.into())]
+    #[structopt(long, parse(try_from_str), default_value = Sport::Nhl.into(), global = true)]
     /// Specify which sport to get streams for: 'mlb' or 'nhl'
     pub sport: Sport,
     #[structopt(long, parse(try_from_str = parse_date), value_name = "YYYYMMDD", global = true)]

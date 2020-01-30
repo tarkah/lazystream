@@ -52,4 +52,20 @@ impl Client {
         let game_content = serde_json::from_slice(&serialized)?;
         Ok(game_content)
     }
+
+    pub async fn get_teams(&self) -> Result<Vec<Team>, Error> {
+        let serialized = match &self.sport {
+            Sport::Mlb => {
+                let teams = self.mlb.get_all_teams().await?;
+                serde_json::to_vec(&teams)?
+            }
+            Sport::Nhl => {
+                let teams = self.nhl.get_teams().await?;
+                serde_json::to_vec(&teams)?
+            }
+        };
+
+        let teams = serde_json::from_slice(&serialized)?;
+        Ok(teams)
+    }
 }
