@@ -1,6 +1,6 @@
 use crate::{
     log_error,
-    opt::{Cdn, Command, GenerateCommand, Opt, Quality},
+    opt::{Cdn, Command, GenerateCommand, Opt, Quality, Sport},
     stream::{Game, LazyStream},
     VERSION,
 };
@@ -8,6 +8,9 @@ use async_std::{fs, process, task};
 use chrono::Local;
 use failure::Error;
 use std::path::PathBuf;
+
+const NHL_ICON: &str = "http://home.windstream.net/dgrodecki/images/nhl/nhl_logo2.jpg";
+const MLB_ICON: &str = "http://home.windstream.net/dgrodecki/images/mlb/mlb_logo1.jpg";
 
 pub fn run(opts: Opt) {
     task::block_on(async {
@@ -58,7 +61,15 @@ async fn process(opts: Opt) -> Result<(), Error> {
                 .await?;
 
                 let path = path.with_extension("xml");
-                create_xmltv(path, games, &opts.cdn, &opts.quality, start_channel).await?;
+                create_xmltv(
+                    path,
+                    games,
+                    &opts.cdn,
+                    &opts.quality,
+                    start_channel,
+                    &opts.sport,
+                )
+                .await?;
             }
             GenerateCommand::Playlist { file } => {
                 let path = file.with_extension("m3u");
@@ -133,6 +144,7 @@ async fn create_xmltv(
     cdn: &Cdn,
     quality: &Option<Quality>,
     start_channel: u32,
+    sport: &Sport,
 ) -> Result<(), Error> {
     let mut xmltv = String::new();
     xmltv.push_str(&format!(
@@ -143,15 +155,21 @@ async fn create_xmltv(
         VERSION
     ));
 
+    let icon = match sport {
+        Sport::Nhl => NHL_ICON,
+        Sport::Mlb => MLB_ICON,
+    };
+
     let mut id: u32 = 0;
     while id < 100 {
         let record = format!(
             "\n    <channel id=\"{}\">\
              \n      <display-name>Lazyman {}</display-name>\
-             \n      <icon src=\"http://home.windstream.net/dgrodecki/images/nhl/nhl_logo2.jpg\"></icon>\
+             \n      <icon src=\"{}\"></icon>\
              \n    </channel>",
             start_channel + id,
-            id + 1
+            id + 1,
+            icon
         );
         xmltv.push_str(&record);
         id += 1;
