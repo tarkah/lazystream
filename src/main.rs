@@ -2,8 +2,8 @@ use crate::opt::OutputType;
 use colored::Colorize;
 use failure::Error;
 
+mod api;
 mod generate;
-mod generic_stats_api;
 mod opt;
 mod select;
 mod stream;

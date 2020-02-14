@@ -1,6 +1,6 @@
 use crate::{
-    generic_stats_api::client::Client,
-    generic_stats_api::model::{
+    api::client::Client,
+    api::model::{
         GameContentArticleMediaImageCut, GameContentEditorialItem, GameContentResponse, Team,
     },
     opt::{Cdn, FeedType, Opt, Quality, Sport},
