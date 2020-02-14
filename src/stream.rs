@@ -169,7 +169,7 @@ impl Game {
 
             if let Some(epg) = game_content.media.epg {
                 for epg in epg {
-                    if epg.title == "NHLTV" {
+                    if epg.title == "NHLTV" || epg.title == "MLBTV" {
                         if let Some(items) = epg.items {
                             for item in items {
                                 if let Some(feed_type) = item.media_feed_type {
