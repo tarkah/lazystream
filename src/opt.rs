@@ -87,7 +87,9 @@ pub enum Command {
 
 #[derive(StructOpt, Debug, PartialEq, Clone)]
 pub enum PlayCommand {
-    #[structopt(usage = "lazystream play select [--restart --proxy <PROXY>] [OPTIONS]")]
+    #[structopt(
+        usage = "lazystream play select [--restart --proxy <PROXY> --passthrough] [OPTIONS]"
+    )]
     /// Select a game from the command line to play in VLC
     Select {
         #[structopt(long)]
@@ -96,9 +98,15 @@ pub enum PlayCommand {
         #[structopt(long, parse(try_from_str))]
         /// Proxy server address to be passed to Streamlink
         proxy: Option<Uri>,
+        #[structopt(long)]
+        /// Pass stream directly to VLC, this allows playback seeking
+        passthrough: bool,
+        #[structopt(long, value_name = "[HH:]MM:SS", parse(try_from_str = parse_offset))]
+        /// Amount of time to skip from the beginning of the stream. For live streams, this is a negative offset from the end of the stream (rewind).
+        offset: Option<String>,
     },
     #[structopt(
-        usage = "lazystream play team <TEAM> [--restart --feed-type <feed-type> --proxy <PROXY>] [OPTIONS]"
+        usage = "lazystream play team <TEAM> [--restart --feed-type <feed-type> --proxy <PROXY> --passthrough] [OPTIONS]"
     )]
     /// Specify team abbreviation. If / when stream is available, will play in VLC
     ///
@@ -122,6 +130,12 @@ pub enum PlayCommand {
         #[structopt(long, parse(try_from_str))]
         /// Proxy server address to be passed to Streamlink
         proxy: Option<Uri>,
+        #[structopt(long)]
+        /// Pass stream directly to VLC, this allows playback seeking
+        passthrough: bool,
+        #[structopt(long, value_name = "[HH:]MM:SS", parse(try_from_str = parse_offset))]
+        /// Amount of time to skip from the beginning of the stream. For live streams, this is a negative offset from the end of the stream (rewind).
+        offset: Option<String>,
     },
 }
 
@@ -141,6 +155,9 @@ pub enum RecordCommand {
         #[structopt(long, parse(try_from_str))]
         /// Proxy server address to be passed to Streamlink
         proxy: Option<Uri>,
+        #[structopt(long, value_name = "[HH:]MM:SS", parse(try_from_str = parse_offset))]
+        /// Amount of time to skip from the beginning of the stream. For live streams, this is a negative offset from the end of the stream (rewind).
+        offset: Option<String>,
     },
     #[structopt(
         usage = "lazystream record team <TEAM> <OUTPUT DIR> [--restart --feed-type <feed-type> --proxy <PROXY>] [OPTIONS]"
@@ -170,6 +187,9 @@ pub enum RecordCommand {
         #[structopt(long, parse(try_from_str))]
         /// Proxy server address to be passed to Streamlink
         proxy: Option<Uri>,
+        #[structopt(long, value_name = "[HH:]MM:SS", parse(try_from_str = parse_offset))]
+        /// Amount of time to skip from the beginning of the stream. For live streams, this is a negative offset from the end of the stream (rewind).
+        offset: Option<String>,
     },
 }
 
@@ -184,6 +204,9 @@ pub enum CastCommand {
         #[structopt(long, parse(try_from_str))]
         /// Proxy server address to be passed to Streamlink
         proxy: Option<Uri>,
+        #[structopt(long, value_name = "[HH:]MM:SS", parse(try_from_str = parse_offset))]
+        /// Amount of time to skip from the beginning of the stream. For live streams, this is a negative offset from the end of the stream (rewind).
+        offset: Option<String>,
     },
     #[structopt(
         usage = "lazystream cast team <TEAM> <CHROMECAST IP> [--restart --feed-type <feed-type> --proxy <PROXY>] [OPTIONS]"
@@ -209,6 +232,9 @@ pub enum CastCommand {
         #[structopt(long, parse(try_from_str))]
         /// Proxy server address to be passed to Streamlink
         proxy: Option<Uri>,
+        #[structopt(long, value_name = "[HH:]MM:SS", parse(try_from_str = parse_offset))]
+        /// Amount of time to skip from the beginning of the stream. For live streams, this is a negative offset from the end of the stream (rewind).
+        offset: Option<String>,
     },
 }
 
@@ -375,4 +401,12 @@ impl std::fmt::Display for FeedType {
         let s: &str = self.clone().into();
         write!(f, "{}", s)
     }
+}
+
+fn parse_offset(s: &str) -> Result<String, Error> {
+    let re = regex::Regex::new(r"^(\d{2}:)?\d{2}:\d{2}$").unwrap();
+    if re.is_match(s) {
+        return Ok(s.to_owned());
+    }
+    bail!("Offset must be supplied as [HH:]MM:SS");
 }
