@@ -30,7 +30,7 @@ async fn process(opts: Opt) -> Result<(), Error> {
              and accessible from your PATH"
         ))?;
 
-    let (game, mut stream, command, restart, proxy) = match &opts.command {
+    let (game, mut stream, command, restart, proxy, offset) = match &opts.command {
         Command::Play { command } => process_play(&opts, command).await?,
         Command::Record { command } => process_record(&opts, command).await?,
         Command::Cast { command } => process_cast(&opts, command).await?,
@@ -44,7 +44,8 @@ async fn process(opts: Opt) -> Result<(), Error> {
     }
     let link = stream.master_link(&opts.cdn).await?;
 
-    task::spawn_blocking(move || streamlink(link, game, stream, command, restart, proxy)).await?;
+    task::spawn_blocking(move || streamlink(link, game, stream, command, restart, proxy, offset))
+        .await?;
 
     Ok(())
 }
@@ -52,119 +53,42 @@ async fn process(opts: Opt) -> Result<(), Error> {
 async fn process_play(
     opts: &Opt,
     command: &PlayCommand,
-) -> Result<(Game, Stream, StreamlinkCommand, bool, Option<Uri>), Error> {
+) -> Result<
+    (
+        Game,
+        Stream,
+        StreamlinkCommand,
+        bool,
+        Option<Uri>,
+        Option<String>,
+    ),
+    Error,
+> {
     match command {
-        PlayCommand::Select { restart, proxy } => {
+        PlayCommand::Select {
+            restart,
+            proxy,
+            offset,
+            ..
+        } => {
             let (game, stream) = crate::select::process(opts, true).await?;
 
             let streamlink_command = StreamlinkCommand::from(command);
-            Ok((game, stream, streamlink_command, *restart, proxy.clone()))
+            Ok((
+                game,
+                stream,
+                streamlink_command,
+                *restart,
+                proxy.clone(),
+                offset.clone(),
+            ))
         }
         PlayCommand::Team {
             team_abbrev,
             restart,
             feed_type,
             proxy,
-        } => {
-            let lazy_stream = LazyStream::new(opts).await?;
-            lazy_stream.check_team_abbrev(&team_abbrev)?;
-            println!("Found matching team for {}", team_abbrev);
-
-            if let Some(mut game) = lazy_stream.game_with_team_abbrev(&team_abbrev) {
-                println!("Game found for today");
-
-                let stream = game
-                    .stream_with_feed_or_default(feed_type, team_abbrev)
-                    .await?;
-                println!("Using stream feed {}", stream.feed_type);
-
-                let streamlink_command = StreamlinkCommand::from(command);
-                Ok((game, stream, streamlink_command, *restart, proxy.clone()))
-            } else {
-                bail!("There are no games today for {}", team_abbrev);
-            }
-        }
-    }
-}
-
-async fn process_record(
-    opts: &Opt,
-    command: &RecordCommand,
-) -> Result<(Game, Stream, StreamlinkCommand, bool, Option<Uri>), Error> {
-    match command {
-        RecordCommand::Select {
-            output,
-            restart,
-            proxy,
-        } => {
-            check_output(&output)?;
-            let (game, stream) = crate::select::process(opts, true).await?;
-
-            let streamlink_command = StreamlinkCommand::from(command);
-            Ok((game, stream, streamlink_command, *restart, proxy.clone()))
-        }
-        RecordCommand::Team {
-            team_abbrev,
-            restart,
-            feed_type,
-            output,
-            proxy,
-        } => {
-            check_output(&output)?;
-
-            let lazy_stream = LazyStream::new(opts).await?;
-            lazy_stream.check_team_abbrev(&team_abbrev)?;
-            println!("Found matching team for {}", team_abbrev);
-
-            if let Some(mut game) = lazy_stream.game_with_team_abbrev(&team_abbrev) {
-                println!("Game found for today");
-
-                let stream = game
-                    .stream_with_feed_or_default(feed_type, team_abbrev)
-                    .await?;
-                println!("Using stream feed {}", stream.feed_type);
-
-                let streamlink_command = StreamlinkCommand::from(command);
-                Ok((game, stream, streamlink_command, *restart, proxy.clone()))
-            } else {
-                bail!("There are no games today for {}", team_abbrev);
-            }
-        }
-    }
-}
-
-async fn process_cast(
-    opts: &Opt,
-    command: &CastCommand,
-) -> Result<(Game, Stream, StreamlinkCommand, bool, Option<Uri>), Error> {
-    task::spawn_blocking(check_vlc).await.context(format_err!(
-        "Could not find and run VLC. Please ensure it is installed \
-         and accessible from your PATH"
-    ))?;
-
-    match command {
-        CastCommand::Select { restart, proxy } => {
-            let (game, stream) = crate::select::process(opts, true).await?;
-
-            let cast_devices = task::spawn_blocking(|| {
-                print!("\nSearching for cast devices...");
-                let _ = std::io::stdout().flush();
-                find_cast_devices()
-            })
-            .await?;
-
-            let cast_ip = select_cast_device(cast_devices)?;
-            println!("\nUsing cast device {}\n", cast_ip);
-
-            let streamlink_command = StreamlinkCommand::cast_with_ip(cast_ip);
-
-            Ok((game, stream, streamlink_command, *restart, proxy.clone()))
-        }
-        CastCommand::Team {
-            team_abbrev,
-            restart,
-            feed_type,
-            proxy,
+            offset,
             ..
         } => {
             let lazy_stream = LazyStream::new(opts).await?;
@@ -180,7 +104,170 @@ async fn process_cast(
                 println!("Using stream feed {}", stream.feed_type);
 
                 let streamlink_command = StreamlinkCommand::from(command);
-                Ok((game, stream, streamlink_command, *restart, proxy.clone()))
+                Ok((
+                    game,
+                    stream,
+                    streamlink_command,
+                    *restart,
+                    proxy.clone(),
+                    offset.clone(),
+                ))
+            } else {
+                bail!("There are no games today for {}", team_abbrev);
+            }
+        }
+    }
+}
+
+async fn process_record(
+    opts: &Opt,
+    command: &RecordCommand,
+) -> Result<
+    (
+        Game,
+        Stream,
+        StreamlinkCommand,
+        bool,
+        Option<Uri>,
+        Option<String>,
+    ),
+    Error,
+> {
+    match command {
+        RecordCommand::Select {
+            output,
+            restart,
+            proxy,
+            offset,
+        } => {
+            check_output(&output)?;
+            let (game, stream) = crate::select::process(opts, true).await?;
+
+            let streamlink_command = StreamlinkCommand::from(command);
+            Ok((
+                game,
+                stream,
+                streamlink_command,
+                *restart,
+                proxy.clone(),
+                offset.clone(),
+            ))
+        }
+        RecordCommand::Team {
+            team_abbrev,
+            restart,
+            feed_type,
+            output,
+            proxy,
+            offset,
+        } => {
+            check_output(&output)?;
+
+            let lazy_stream = LazyStream::new(opts).await?;
+            lazy_stream.check_team_abbrev(&team_abbrev)?;
+            println!("Found matching team for {}", team_abbrev);
+
+            if let Some(mut game) = lazy_stream.game_with_team_abbrev(&team_abbrev) {
+                println!("Game found for today");
+
+                let stream = game
+                    .stream_with_feed_or_default(feed_type, team_abbrev)
+                    .await?;
+                println!("Using stream feed {}", stream.feed_type);
+
+                let streamlink_command = StreamlinkCommand::from(command);
+                Ok((
+                    game,
+                    stream,
+                    streamlink_command,
+                    *restart,
+                    proxy.clone(),
+                    offset.clone(),
+                ))
+            } else {
+                bail!("There are no games today for {}", team_abbrev);
+            }
+        }
+    }
+}
+
+async fn process_cast(
+    opts: &Opt,
+    command: &CastCommand,
+) -> Result<
+    (
+        Game,
+        Stream,
+        StreamlinkCommand,
+        bool,
+        Option<Uri>,
+        Option<String>,
+    ),
+    Error,
+> {
+    task::spawn_blocking(check_vlc).await.context(format_err!(
+        "Could not find and run VLC. Please ensure it is installed \
+         and accessible from your PATH"
+    ))?;
+
+    match command {
+        CastCommand::Select {
+            restart,
+            proxy,
+            offset,
+        } => {
+            let (game, stream) = crate::select::process(opts, true).await?;
+
+            let cast_devices = task::spawn_blocking(|| {
+                print!("\nSearching for cast devices...");
+                let _ = std::io::stdout().flush();
+                find_cast_devices()
+            })
+            .await?;
+
+            let cast_ip = select_cast_device(cast_devices)?;
+            println!("\nUsing cast device {}\n", cast_ip);
+
+            let streamlink_command = StreamlinkCommand::cast_with_ip(cast_ip);
+
+            Ok((
+                game,
+                stream,
+                streamlink_command,
+                *restart,
+                proxy.clone(),
+                offset.clone(),
+            ))
+        }
+        CastCommand::Team {
+            team_abbrev,
+            restart,
+            feed_type,
+            proxy,
+            offset,
+            ..
+        } => {
+            let lazy_stream = LazyStream::new(opts).await?;
+            lazy_stream.check_team_abbrev(&team_abbrev)?;
+            println!("Found matching team for {}", team_abbrev);
+
+            if let Some(mut game) = lazy_stream.game_with_team_abbrev(&team_abbrev) {
+                println!("Game found for today");
+
+                let stream = game
+                    .stream_with_feed_or_default(feed_type, team_abbrev)
+                    .await?;
+                println!("Using stream feed {}", stream.feed_type);
+
+                let streamlink_command = StreamlinkCommand::from(command);
+                Ok((
+                    game,
+                    stream,
+                    streamlink_command,
+                    *restart,
+                    proxy.clone(),
+                    offset.clone(),
+                ))
             } else {
                 bail!("There are no games today for {}", team_abbrev);
             }
@@ -190,7 +277,7 @@ async fn process_cast(
 
 #[derive(PartialEq)]
 enum StreamlinkCommand {
-    Play,
+    Play { passthrough: bool },
     Record { output: PathBuf },
     Cast { cast_ip: Ipv4Addr },
 }
@@ -202,8 +289,15 @@ impl StreamlinkCommand {
 }
 
 impl From<&PlayCommand> for StreamlinkCommand {
-    fn from(_cmd: &PlayCommand) -> Self {
-        StreamlinkCommand::Play
+    fn from(cmd: &PlayCommand) -> Self {
+        match cmd {
+            PlayCommand::Select { passthrough, .. } => StreamlinkCommand::Play {
+                passthrough: *passthrough,
+            },
+            PlayCommand::Team { passthrough, .. } => StreamlinkCommand::Play {
+                passthrough: *passthrough,
+            },
+        }
     }
 }
 
@@ -238,6 +332,7 @@ fn streamlink(
     mut command: StreamlinkCommand,
     restart: bool,
     proxy: Option<Uri>,
+    offset: Option<String>,
 ) -> Result<(), Error> {
     match &command {
         StreamlinkCommand::Play { .. } => {
@@ -259,7 +354,7 @@ fn streamlink(
 
     let vlc_cmd = if cfg!(target_os = "windows") {
         "vlc.exe"
-    } else if command == StreamlinkCommand::Play {
+    } else if let StreamlinkCommand::Play { .. } = command {
         "vlc"
     } else {
         "cvlc"
@@ -291,9 +386,16 @@ fn streamlink(
         args.push(&_proxy);
     }
 
+    let mut _offset = String::new();
+    if let Some(offset) = offset {
+        _offset = offset;
+        args.push("--hls-start-offset");
+        args.push(&_offset);
+    }
+
     let mut _arg;
     match &mut command {
-        StreamlinkCommand::Play => {
+        StreamlinkCommand::Play { passthrough } => {
             let title = format!(
                 "{} @ {} - {} - {}",
                 game.away_team.name,
@@ -309,6 +411,11 @@ fn streamlink(
             args.push(vlc_cmd);
             args.push("--title");
             args.push(_arg.as_str());
+
+            if *passthrough {
+                args.push("--player-passthrough");
+                args.push("hls");
+            }
         }
         StreamlinkCommand::Record { output } => {
             let filename = format!(
