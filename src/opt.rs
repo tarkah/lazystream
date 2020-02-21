@@ -414,7 +414,7 @@ fn parse_offset(s: &str) -> Result<String, Error> {
     bail!("Offset must be supplied as [HH:]MM:SS");
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Sport {
     Mlb,
     Nhl,

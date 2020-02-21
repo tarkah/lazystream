@@ -26,7 +26,7 @@ impl LazyStream {
             Local::today().naive_local()
         };
 
-        let client = Client::new(&opts.sport);
+        let client = Client::new(opts.sport);
         let schedule = client.get_schedule_for(date).await?;
         let teams = client.get_teams().await?;
 
@@ -44,7 +44,7 @@ impl LazyStream {
                 .unwrap();
 
             let game = Game::new(
-                opts.sport.clone(),
+                opts.sport,
                 game_pk,
                 game_date,
                 date,
@@ -101,11 +101,9 @@ impl LazyStream {
         let tasks: Vec<_> = self
             .games
             .iter_mut()
-            .map(|game| {
-                async {
-                    game.resolve_streams_master_link(cdn).await;
-                    drop(game);
-                }
+            .map(|game| async {
+                game.resolve_streams_master_link(cdn).await;
+                drop(game);
             })
             .collect();
 
@@ -117,11 +115,9 @@ impl LazyStream {
         let tasks: Vec<_> = self
             .games
             .iter_mut()
-            .map(|game| {
-                async {
-                    game.resolve_streams_quality_link(cdn, quality).await;
-                    drop(game);
-                }
+            .map(|game| async {
+                game.resolve_streams_quality_link(cdn, quality).await;
+                drop(game);
             })
             .collect();
 
@@ -181,6 +177,7 @@ impl Game {
 
                                     let stream = Stream::new(
                                         id,
+                                        self.sport,
                                         feed_type.clone(),
                                         self.game_date,
                                         self.selected_date,
@@ -201,7 +198,7 @@ impl Game {
 
     pub async fn game_content(&mut self) -> Result<GameContentResponse, Error> {
         if self.game_content.is_none() {
-            let client = Client::new(&self.sport);
+            let client = Client::new(self.sport);
             let game_content = client.get_game_content(self.game_pk).await?;
             self.game_content = Some(game_content.clone());
             Ok(game_content)
@@ -291,11 +288,9 @@ impl Game {
             .as_mut()
             .unwrap()
             .iter_mut()
-            .map(|(_, stream)| {
-                async {
-                    stream.resolve_master_link(cdn).await;
-                    drop(stream);
-                }
+            .map(|(_, stream)| async {
+                stream.resolve_master_link(cdn).await;
+                drop(stream);
             })
             .collect();
 
@@ -312,11 +307,9 @@ impl Game {
             .as_mut()
             .unwrap()
             .iter_mut()
-            .map(|(_, stream)| {
-                async {
-                    stream.resolve_quality_link(cdn, quality).await;
-                    drop(stream);
-                }
+            .map(|(_, stream)| async {
+                stream.resolve_quality_link(cdn, quality).await;
+                drop(stream);
             })
             .collect();
 
@@ -328,6 +321,7 @@ impl Game {
 #[allow(clippy::option_option)]
 pub struct Stream {
     id: String,
+    sport: Sport,
     pub feed_type: FeedType,
     game_date: DateTime<Utc>,
     selected_date: NaiveDate,
@@ -339,12 +333,14 @@ pub struct Stream {
 impl Stream {
     fn new(
         id: String,
+        sport: Sport,
         feed_type: FeedType,
         game_date: DateTime<Utc>,
         selected_date: NaiveDate,
     ) -> Self {
         Stream {
             id,
+            sport,
             feed_type,
             game_date,
             selected_date,
@@ -356,8 +352,9 @@ impl Stream {
 
     pub fn host_link(&self, cdn: &Cdn) -> String {
         format!(
-            "{}/getM3U8.php?league=nhl&date={}&id={}&cdn={}",
+            "{}/getM3U8.php?league={}&date={}&id={}&cdn={}",
             HOST,
+            self.sport,
             self.selected_date.format("%Y-%m-%d"),
             self.id,
             cdn,

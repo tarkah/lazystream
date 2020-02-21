@@ -10,15 +10,11 @@ pub struct Client {
 }
 
 impl Client {
-    pub fn new(sport: &Sport) -> Self {
+    pub fn new(sport: Sport) -> Self {
         let mlb = MlbClient::default();
         let nhl = NhlClient::default();
 
-        Client {
-            mlb,
-            nhl,
-            sport: sport.clone(),
-        }
+        Client { mlb, nhl, sport }
     }
 
     pub async fn get_schedule_for(&self, date: chrono::NaiveDate) -> Result<Schedule, Error> {

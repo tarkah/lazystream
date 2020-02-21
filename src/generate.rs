@@ -67,7 +67,7 @@ async fn process(opts: Opt) -> Result<(), Error> {
                     &opts.cdn,
                     &opts.quality,
                     start_channel,
-                    &opts.sport,
+                    opts.sport,
                 )
                 .await?;
             }
@@ -144,7 +144,7 @@ async fn create_xmltv(
     cdn: &Cdn,
     quality: &Option<Quality>,
     start_channel: u32,
-    sport: &Sport,
+    sport: Sport,
 ) -> Result<(), Error> {
     let mut xmltv = String::new();
     xmltv.push_str(&format!(
