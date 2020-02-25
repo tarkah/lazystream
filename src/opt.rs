@@ -423,7 +423,7 @@ pub enum Sport {
 impl From<Sport> for &str {
     fn from(sport: Sport) -> &'static str {
         match sport {
-            Sport::Mlb => "mlb",
+            Sport::Mlb => "MLB",
             Sport::Nhl => "nhl",
         }
     }
