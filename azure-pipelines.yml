@@ -10,14 +10,14 @@ jobs:
     strategy:
       matrix:
         windows-stable:
-          imageName: "vs2017-win2016"
-          rustup_toolchain: 1.40.0
+          imageName: "windows-latest"
+          rustup_toolchain: stable
         linux-stable:
           imageName: "ubuntu-latest"
-          rustup_toolchain: 1.40.0
+          rustup_toolchain: stable
         macos-stable:
           imageName: "macOS-latest"
-          rustup_toolchain: 1.40.0
+          rustup_toolchain: stable
 
     pool:
       vmImage: $(imageName)
@@ -44,16 +44,16 @@ jobs:
     strategy:
       matrix:
         windows-stable:
-          imageName: "vs2017-win2016"
-          rustup_toolchain: 1.40.0
+          imageName: "windows-latest"
+          rustup_toolchain: stable
           target: "x86_64-pc-windows-msvc"
         linux-stable:
           imageName: "ubuntu-latest"
-          rustup_toolchain: 1.40.0
+          rustup_toolchain: stable
           target: "x86_64-unknown-linux-gnu"
         macos-stable:
           imageName: "macOS-latest"
-          rustup_toolchain: 1.40.0
+          rustup_toolchain: stable
           target: "x86_64-apple-darwin"
 
     pool:
@@ -82,30 +82,35 @@ jobs:
     strategy:
       matrix:
         windows-stable:
-          imageName: "vs2017-win2016"
-          rustup_toolchain: 1.40.0
+          imageName: "windows-latest"
+          rustup_toolchain: stable
           target: "x86_64-pc-windows-msvc"
           docker: false
         linux-stable:
           imageName: "ubuntu-latest"
-          rustup_toolchain: 1.40.0
+          rustup_toolchain: stable
           target: "x86_64-unknown-linux-gnu"
           docker: false
         macos-stable:
           imageName: "macOS-latest"
-          rustup_toolchain: 1.40.0
+          rustup_toolchain: stable
           target: "x86_64-apple-darwin"
           docker: false
         armv7-stable:
           imageName: "ubuntu-latest"
-          rustup_toolchain: 1.40.0
+          rustup_toolchain: stable
           target: "armv7-unknown-linux-gnueabihf"
           docker: true
         aarch64-stable:
           imageName: "ubuntu-latest"
-          rustup_toolchain: 1.40.0
+          rustup_toolchain: stable
           target: "aarch64-unknown-linux-gnu"
           docker: true
+        musl-stable:
+          imageName: "ubuntu-latest"
+          rustup_toolchain: stable
+          target: "x86_64-unknown-linux-musl"
+          docker: false
 
     pool:
       vmImage: $(imageName)
@@ -123,6 +128,11 @@ jobs:
         displayName: Create Tag Variable
 
       - script: |
+          sudo apt update
+          sudo apt install -y musl-tools
+        displayName: Linux Musl Dependencies
+        condition: eq( variables['target'], 'x86_64-unknown-linux-musl' )
+      - script: |
           curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain $RUSTUP_TOOLCHAIN
           echo "##vso[task.setvariable variable=PATH;]$PATH:$HOME/.cargo/bin"
         displayName: Linux Darwin Install Rust
@@ -133,10 +143,14 @@ jobs:
           echo "##vso[task.setvariable variable=PATH;]%PATH%;%USERPROFILE%\.cargo\bin"
         displayName: Windows Install Rust
         condition: and( eq( variables['Agent.OS'], 'Windows_NT' ), eq( variables['docker'], 'false' ))
-      - script: cargo build --release --all
+      - script: |
+          rustup target add $TARGET
+        displayName: Add Musl Target
+        condition: eq( variables['target'], 'x86_64-unknown-linux-musl' )
+      - bash: cargo build --release --all --target $TARGET
         displayName: Cargo Build
         condition: eq( variables['docker'], 'false' )
-      - script: cargo test --release --all
+      - bash: cargo test --release --all --target $TARGET
         displayName: Cargo Test
         condition: eq( variables['docker'], 'false' )
 
