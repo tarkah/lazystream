@@ -4,7 +4,7 @@ RUN dpkg --add-architecture arm64 && \
     apt-get update && \
     apt-get install -y curl build-essential gcc-aarch64-linux-gnu pkg-config
 
-RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain 1.40.0
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain stable
 
 ENV RUSTUP_HOME=/root/.rustup \
     CARGO_HOME=/root/.cargo \
