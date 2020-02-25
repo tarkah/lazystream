@@ -9,7 +9,7 @@ mod select;
 mod stream;
 mod streamlink;
 
-const VERSION: &str = "1.8.1";
+const VERSION: &str = "1.9.0";
 const HOST: &str = "http://freegamez.ga";
 const BANNER: &str = r#"
  |        \   __  /\ \   / ___|__ __|  _ \  ____|    \     \  | 

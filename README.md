@@ -3,16 +3,22 @@
 
 Easily get LazyMan stream links, output directly or to m3u / xmltv formats.
 
+- Supports both NHL and MLB games. Use `--sport` option to specify `mlb` or `nhl` [default: nhl]
+
 - Defaults to grabbing the current days games. `--date YYYYMMDD` can be specified for a certain day. 
+
 - xmltv and m3u playlist formats can be generated for all games using the `generate` subcommand
+
 - Games can be recorded using the `record` subcommand. This requires StreamLink is installed and in your path. If a game is live, you can use the `--restart` flag to start recording from the beginning of the stream. Currently `best` quality is used with StreamLink, the `--quality` option doesn't affect this, for now.
+
 - Games can be casted to a chromecast using the `cast` subcommand. In addition to Streamlink, VLC is required to cast the stream.
+
 - Play games directly to VLC with the `play` subcommand. Requires both Streamlink and VLC.
 
 ```
 ❯ lazystream --help
 
-lazystream 1.8.1
+lazystream 1.9.0
 tarkah <admin@tarkah.dev>
 Easily get LazyMan stream links, output directly or to m3u / xmltv formats. Streams can also be recorded or casted.
 
@@ -24,6 +30,7 @@ FLAGS:
     -V, --version    Prints version information
 
 OPTIONS:
+        --sport <sport>        Specify which sport to get streams for: 'mlb' or 'nhl' [default: nhl]
         --date <YYYYMMDD>      Specify what date to use for games, defaults to today
         --cdn <cdn>            Specify which CDN to use: 'akc' or 'l3c' [default: akc]
         --quality <quality>    Specify a quality to use, otherwise stream will be adaptive. Doesn't currently affect
@@ -37,7 +44,7 @@ SUBCOMMANDS:
     cast        Cast a game, requires StreamLink and VLC
     help        Prints this message or the help of the given subcommand(s)
 
-❯ lazystream select
+❯ lazystream select --sport nhl
 
  |        \   __  /\ \   / ___|__ __|  _ \  ____|    \     \  | 
  |       _ \     /  \   /\___ \   |   |   | __|     _ \   |\/ | 
