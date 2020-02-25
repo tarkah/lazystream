@@ -173,7 +173,11 @@ impl Game {
                                         Sport::Mlb => format!("{}", item.id.unwrap()),
                                         Sport::Nhl => item.media_playback_id.unwrap(),
                                     };
-                                    let feed_type = FeedType::from_str(feed_type.as_str())?;
+
+                                    let feed_type = match FeedType::from_str(feed_type.as_str()) {
+                                        Ok(feed_type) => feed_type,
+                                        Err(_) => continue,
+                                    };
 
                                     let stream = Stream::new(
                                         id,
