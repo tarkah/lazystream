@@ -1,7 +1,7 @@
 # LazyStream
 [![Build Status](https://dev.azure.com/tarkah/lazystream/_apis/build/status/tarkah.lazystream?branchName=master)](https://dev.azure.com/tarkah/lazystream/_build/latest?definitionId=11&branchName=master)
 
-Easily get LazyMan stream links, output directly or to m3u / xmltv formats.
+Easily get LazyMan stream links, output directly or to m3u / xmltv formats. Streams can also be recorded or casted.
 
 - Supports both NHL and MLB games. Use `--sport` option to specify `mlb` or `nhl` [default: nhl]
 
