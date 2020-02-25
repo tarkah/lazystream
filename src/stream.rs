@@ -1,15 +1,15 @@
 use crate::{
-    opt::{Cdn, FeedType, Opt, Quality},
+    api::client::Client,
+    api::model::{
+        GameContentArticleMediaImageCut, GameContentEditorialItem, GameContentResponse, Team,
+    },
+    opt::{Cdn, FeedType, Opt, Quality, Sport},
     HOST,
 };
 use chrono::{DateTime, Local, NaiveDate, Utc};
 use failure::{bail, format_err, Error, ResultExt};
 use futures::{future, AsyncReadExt};
 use http_client::{native::NativeClient, Body, HttpClient};
-use stats_api::{
-    model::nhl::{GameContentArticleMediaImageCut, GameContentResponse, Team},
-    NhlClient,
-};
 use std::{collections::HashMap, str::FromStr};
 
 pub struct LazyStream {
@@ -26,7 +26,7 @@ impl LazyStream {
             Local::today().naive_local()
         };
 
-        let client = NhlClient::new();
+        let client = Client::new(opts.sport);
         let schedule = client.get_schedule_for(date).await?;
         let teams = client.get_teams().await?;
 
@@ -44,6 +44,7 @@ impl LazyStream {
                 .unwrap();
 
             let game = Game::new(
+                opts.sport,
                 game_pk,
                 game_date,
                 date,
@@ -126,6 +127,7 @@ impl LazyStream {
 
 #[derive(Clone)]
 pub struct Game {
+    sport: Sport,
     pub game_pk: u64,
     pub game_date: DateTime<Utc>,
     pub selected_date: NaiveDate,
@@ -137,6 +139,7 @@ pub struct Game {
 
 impl Game {
     fn new(
+        sport: Sport,
         game_pk: u64,
         game_date: DateTime<Utc>,
         selected_date: NaiveDate,
@@ -144,6 +147,7 @@ impl Game {
         away_team: Team,
     ) -> Self {
         Game {
+            sport,
             game_pk,
             game_date,
             selected_date,
@@ -159,20 +163,28 @@ impl Game {
             let mut streams = HashMap::new();
             let game_content = self.game_content().await?;
 
-            for epg in game_content.media.epg {
-                if epg.title == "NHLTV" {
-                    if let Some(items) = epg.items {
-                        for item in items {
-                            let id = item.media_playback_id;
-                            let feed_type = FeedType::from_str(item.media_feed_type.as_str())?;
+            if let Some(epg) = game_content.media.epg {
+                for epg in epg {
+                    if epg.title == "NHLTV" || epg.title == "MLBTV" {
+                        if let Some(items) = epg.items {
+                            for item in items {
+                                if let Some(feed_type) = item.media_feed_type {
+                                    let id = match self.sport {
+                                        Sport::Mlb => format!("{}", item.id.unwrap()),
+                                        Sport::Nhl => item.media_playback_id.unwrap(),
+                                    };
+                                    let feed_type = FeedType::from_str(feed_type.as_str())?;
 
-                            let stream = Stream::new(
-                                id,
-                                feed_type.clone(),
-                                self.game_date,
-                                self.selected_date,
-                            );
-                            streams.insert(feed_type, stream);
+                                    let stream = Stream::new(
+                                        id,
+                                        self.sport,
+                                        feed_type.clone(),
+                                        self.game_date,
+                                        self.selected_date,
+                                    );
+                                    streams.insert(feed_type, stream);
+                                }
+                            }
                         }
                     }
                 }
@@ -186,7 +198,7 @@ impl Game {
 
     pub async fn game_content(&mut self) -> Result<GameContentResponse, Error> {
         if self.game_content.is_none() {
-            let client = NhlClient::new();
+            let client = Client::new(self.sport);
             let game_content = client.get_game_content(self.game_pk).await?;
             self.game_content = Some(game_content.clone());
             Ok(game_content)
@@ -198,7 +210,10 @@ impl Game {
     pub async fn game_cuts(&mut self) -> Option<GameContentArticleMediaImageCut> {
         let game_content = self.game_content().await.ok()?;
 
-        if let Some(items) = game_content.editorial.preview.items {
+        if let Some(GameContentEditorialItem {
+            items: Some(items), ..
+        }) = game_content.editorial.preview
+        {
             let item = items.get(0)?;
 
             if let Some(media) = item.media.clone() {
@@ -211,7 +226,10 @@ impl Game {
     pub async fn description(&mut self) -> Option<String> {
         let game_content = self.game_content().await.ok()?;
 
-        if let Some(items) = game_content.editorial.preview.items {
+        if let Some(GameContentEditorialItem {
+            items: Some(items), ..
+        }) = game_content.editorial.preview
+        {
             let item = &items.get(0)?;
 
             return Some(item.subhead.clone());
@@ -303,6 +321,7 @@ impl Game {
 #[allow(clippy::option_option)]
 pub struct Stream {
     id: String,
+    sport: Sport,
     pub feed_type: FeedType,
     game_date: DateTime<Utc>,
     selected_date: NaiveDate,
@@ -314,12 +333,14 @@ pub struct Stream {
 impl Stream {
     fn new(
         id: String,
+        sport: Sport,
         feed_type: FeedType,
         game_date: DateTime<Utc>,
         selected_date: NaiveDate,
     ) -> Self {
         Stream {
             id,
+            sport,
             feed_type,
             game_date,
             selected_date,
@@ -331,8 +352,9 @@ impl Stream {
 
     pub fn host_link(&self, cdn: &Cdn) -> String {
         format!(
-            "{}/getM3U8.php?league=nhl&date={}&id={}&cdn={}",
+            "{}/getM3U8.php?league={}&date={}&id={}&cdn={}",
             HOST,
+            self.sport,
             self.selected_date.format("%Y-%m-%d"),
             self.id,
             cdn,

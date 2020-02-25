@@ -28,6 +28,9 @@ pub fn parse_opts() -> OutputType {
 pub struct Opt {
     #[structopt(subcommand)]
     pub command: Command,
+    #[structopt(long, parse(try_from_str), default_value = Sport::Nhl.into(), global = true)]
+    /// Specify which sport to get streams for: 'mlb' or 'nhl'
+    pub sport: Sport,
     #[structopt(long, parse(try_from_str = parse_date), value_name = "YYYYMMDD", global = true)]
     /// Specify what date to use for games, defaults to today
     pub date: Option<NaiveDate>,
@@ -409,4 +412,38 @@ fn parse_offset(s: &str) -> Result<String, Error> {
         return Ok(s.to_owned());
     }
     bail!("Offset must be supplied as [HH:]MM:SS");
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum Sport {
+    Mlb,
+    Nhl,
+}
+
+impl From<Sport> for &str {
+    fn from(sport: Sport) -> &'static str {
+        match sport {
+            Sport::Mlb => "MLB",
+            Sport::Nhl => "nhl",
+        }
+    }
+}
+
+impl FromStr for Sport {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Sport, Error> {
+        match s {
+            "mlb" => Ok(Sport::Mlb),
+            "nhl" => Ok(Sport::Nhl),
+            _ => bail!("Option must match 'mlb' or 'nhl'"),
+        }
+    }
+}
+
+impl std::fmt::Display for Sport {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let s: &str = self.clone().into();
+        write!(f, "{}", s)
+    }
 }

@@ -6,7 +6,7 @@ use crate::{
 };
 use async_std::{process, task};
 use chrono::Local;
-use failure::Error;
+use failure::{bail, Error};
 use read_input::prelude::*;
 
 pub fn run(opts: Opt) {
@@ -60,6 +60,10 @@ pub async fn process(opts: &Opt, need_return: bool) -> Result<(Game, Stream), Er
     let mut game = games.remove(game_choice - 1);
 
     let mut streams = game.streams().await?;
+
+    if streams.is_empty() {
+        bail!("No streams available for that game");
+    }
 
     println!("\nPick a stream...\n");
 
