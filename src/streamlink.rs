@@ -420,9 +420,7 @@ fn streamlink(
         StreamlinkCommand::Record { output } => {
             let filename = format!(
                 "{} {} @ {} {}.mp4",
-                game.game_date
-                    .with_timezone(&Local)
-                    .format("%Y-%m-%d %-I:%M %p"),
+                game.game_date.with_timezone(&Local).format("%Y-%m-%d %H%M"),
                 game.away_team.name,
                 game.home_team.name,
                 stream.feed_type
@@ -517,17 +515,6 @@ fn check_vlc() -> Result<(), Error> {
 fn check_output(directory: &PathBuf) -> Result<(), Error> {
     if !directory.is_dir() {
         bail!("Output diretory does not exist, please create it");
-    }
-
-    let metadata = directory.metadata().context(format_err!(
-        "Could not get output directory metadata. Do you have permissions for this folder?"
-    ))?;
-
-    if metadata.permissions().readonly() {
-        bail!(
-            "Output directory is read only, please change permissions or \
-             specify a directory you have permissions for"
-        );
     }
 
     Ok(())
