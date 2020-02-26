@@ -259,6 +259,9 @@ pub enum GenerateCommand {
         #[structopt(long, default_value = "1000")]
         /// Specify the starting channel number for the XMLVTV output
         start_channel: u32,
+        #[structopt(long, default_value = "Lazyman")]
+        /// Specify the channel name prefix
+        channel_prefix: String,
     },
 }
 
