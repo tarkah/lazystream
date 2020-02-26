@@ -519,17 +519,6 @@ fn check_output(directory: &PathBuf) -> Result<(), Error> {
         bail!("Output diretory does not exist, please create it");
     }
 
-    let metadata = directory.metadata().context(format_err!(
-        "Could not get output directory metadata. Do you have permissions for this folder?"
-    ))?;
-
-    if metadata.permissions().readonly() {
-        bail!(
-            "Output directory is read only, please change permissions or \
-             specify a directory you have permissions for"
-        );
-    }
-
     Ok(())
 }
 
