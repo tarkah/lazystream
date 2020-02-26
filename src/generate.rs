@@ -48,6 +48,7 @@ async fn process(opts: Opt) -> Result<(), Error> {
             GenerateCommand::Xmltv {
                 file,
                 start_channel,
+                channel_prefix,
             } => {
                 let path = file.with_extension("m3u");
                 create_playlist(
@@ -57,6 +58,7 @@ async fn process(opts: Opt) -> Result<(), Error> {
                     &opts.quality,
                     true,
                     start_channel,
+                    Some(&channel_prefix),
                 )
                 .await?;
 
@@ -68,12 +70,13 @@ async fn process(opts: Opt) -> Result<(), Error> {
                     &opts.quality,
                     start_channel,
                     opts.sport,
+                    &channel_prefix,
                 )
                 .await?;
             }
             GenerateCommand::Playlist { file } => {
                 let path = file.with_extension("m3u");
-                create_playlist(path, games, &opts.cdn, &opts.quality, false, 1000).await?;
+                create_playlist(path, games, &opts.cdn, &opts.quality, false, 1000, None).await?;
             }
         }
     }
@@ -88,6 +91,7 @@ async fn create_playlist(
     quality: &Option<Quality>,
     is_xmltv: bool,
     start_channel: u32,
+    channel_prefix: Option<&str>,
 ) -> Result<(), Error> {
     let mut m3u = String::new();
     m3u.push_str("#EXTM3U\n");
@@ -103,7 +107,7 @@ async fn create_playlist(
 
             if let Ok(link) = link {
                 let title = if is_xmltv {
-                    format!("Lazyman {}", id + 1)
+                    format!("{} {}", channel_prefix.unwrap(), id + 1)
                 } else {
                     format!(
                         "{} {} @ {} {}",
@@ -118,9 +122,10 @@ async fn create_playlist(
                     )
                 };
                 let record = format!(
-                    "#EXTINF:-1 CUID=\"{}\" tvg-id=\"{}\" tvg-name=\"Lazyman {}\",{}\n{}\n",
+                    "#EXTINF:-1 CUID=\"{}\" tvg-id=\"{}\" tvg-name=\"{} {}\",{}\n{}\n",
                     start_channel + id,
                     start_channel + id,
+                    channel_prefix.unwrap_or("Lazyman"),
                     id + 1,
                     title,
                     link
@@ -145,6 +150,7 @@ async fn create_xmltv(
     quality: &Option<Quality>,
     start_channel: u32,
     sport: Sport,
+    channel_prefix: &str,
 ) -> Result<(), Error> {
     let mut xmltv = String::new();
     xmltv.push_str(&format!(
@@ -164,10 +170,11 @@ async fn create_xmltv(
     while id < 100 {
         let record = format!(
             "\n    <channel id=\"{}\">\
-             \n      <display-name>Lazyman {}</display-name>\
+             \n      <display-name>{} {}</display-name>\
              \n      <icon src=\"{}\"></icon>\
              \n    </channel>",
             start_channel + id,
+            channel_prefix,
             id + 1,
             icon
         );
