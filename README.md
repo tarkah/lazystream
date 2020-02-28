@@ -9,7 +9,7 @@ Easily get LazyMan stream links, output directly or to m3u / xmltv formats. Stre
 
 - xmltv and m3u playlist formats can be generated for all games using the `generate` subcommand
 
-- Games can be recorded using the `record` subcommand. This requires StreamLink is installed and in your path. If a game is live, you can use the `--restart` flag to start recording from the beginning of the stream. Currently `best` quality is used with StreamLink, the `--quality` option doesn't affect this, for now.
+- Games can be recorded using the `record` subcommand. This requires StreamLink is installed and in your path. If a game is live, you can use the `--restart` flag to start recording from the beginning of the stream. Quality `--quality` can be specified to use a specific quality setting.
 
 - Games can be casted to a chromecast using the `cast` subcommand. In addition to Streamlink, VLC is required to cast the stream.
 
@@ -33,8 +33,7 @@ OPTIONS:
         --sport <sport>        Specify which sport to get streams for: 'mlb' or 'nhl' [default: nhl]
         --date <YYYYMMDD>      Specify what date to use for games, defaults to today
         --cdn <cdn>            Specify which CDN to use: 'akc' or 'l3c' [default: akc]
-        --quality <quality>    Specify a quality to use, otherwise stream will be adaptive. Doesn't currently affect
-                               recording
+        --quality <quality>    Specify a quality to use, otherwise stream will be adaptive
 
 SUBCOMMANDS:
     select      Select stream link via command line

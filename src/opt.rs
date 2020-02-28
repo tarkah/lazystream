@@ -38,7 +38,7 @@ pub struct Opt {
     /// Specify which CDN to use: 'akc' or 'l3c'
     pub cdn: Cdn,
     #[structopt(long, parse(try_from_str), global = true)]
-    /// Specify a quality to use, otherwise stream will be adaptive. Doesn't currently affect recording.
+    /// Specify a quality to use, otherwise stream will be adaptive
     ///
     /// Must be one of: '720p60', '720p', '540p', '504p', '360p', '288p', '224p', '216p'
     pub quality: Option<Quality>,
