@@ -33,12 +33,12 @@ async fn process(opts: Opt) -> Result<(), Error> {
 
     let mut lazy_stream = LazyStream::new(&opts).await?;
 
-    if let Some(quality) = &opts.quality {
+    if let Some(quality) = opts.quality {
         lazy_stream
-            .resolve_with_quality_link(&opts.cdn, quality)
+            .resolve_with_quality_link(opts.cdn, quality)
             .await;
     } else {
-        lazy_stream.resolve_with_master_link(&opts.cdn).await;
+        lazy_stream.resolve_with_master_link(opts.cdn).await;
     }
 
     let games = lazy_stream.games();
@@ -54,8 +54,8 @@ async fn process(opts: Opt) -> Result<(), Error> {
                 create_playlist(
                     path.clone(),
                     games.clone(),
-                    &opts.cdn,
-                    &opts.quality,
+                    opts.cdn,
+                    opts.quality,
                     true,
                     start_channel,
                     Some(&channel_prefix),
@@ -66,8 +66,8 @@ async fn process(opts: Opt) -> Result<(), Error> {
                 create_xmltv(
                     path,
                     games,
-                    &opts.cdn,
-                    &opts.quality,
+                    opts.cdn,
+                    opts.quality,
                     start_channel,
                     opts.sport,
                     &channel_prefix,
@@ -76,7 +76,7 @@ async fn process(opts: Opt) -> Result<(), Error> {
             }
             GenerateCommand::Playlist { file } => {
                 let path = file.with_extension("m3u");
-                create_playlist(path, games, &opts.cdn, &opts.quality, false, 1000, None).await?;
+                create_playlist(path, games, opts.cdn, opts.quality, false, 1000, None).await?;
             }
         }
     }
@@ -87,8 +87,8 @@ async fn process(opts: Opt) -> Result<(), Error> {
 async fn create_playlist(
     path: PathBuf,
     mut games: Vec<Game>,
-    cdn: &Cdn,
-    quality: &Option<Quality>,
+    cdn: Cdn,
+    quality: Option<Quality>,
     is_xmltv: bool,
     start_channel: u32,
     channel_prefix: Option<&str>,
@@ -146,8 +146,8 @@ async fn create_playlist(
 async fn create_xmltv(
     path: PathBuf,
     mut games: Vec<Game>,
-    cdn: &Cdn,
-    quality: &Option<Quality>,
+    cdn: Cdn,
+    quality: Option<Quality>,
     start_channel: u32,
     sport: Sport,
     channel_prefix: &str,

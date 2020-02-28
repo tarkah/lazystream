@@ -1,6 +1,6 @@
 use crate::{
     log_error,
-    opt::{CastCommand, Command, Opt, PlayCommand, RecordCommand},
+    opt::{CastCommand, Command, Opt, PlayCommand, Quality, RecordCommand},
     stream::{Game, LazyStream, Stream},
 };
 use async_std::{process, task};
@@ -30,7 +30,7 @@ async fn process(opts: Opt) -> Result<(), Error> {
              and accessible from your PATH"
         ))?;
 
-    let (game, mut stream, command, restart, proxy, offset) = match &opts.command {
+    let (game, mut stream, command, restart, proxy, offset, quality) = match &opts.command {
         Command::Play { command } => process_play(&opts, command).await?,
         Command::Record { command } => process_record(&opts, command).await?,
         Command::Cast { command } => process_cast(&opts, command).await?,
@@ -38,14 +38,16 @@ async fn process(opts: Opt) -> Result<(), Error> {
     };
 
     println!();
-    while let Err(_) = stream.master_link(&opts.cdn).await {
+    while let Err(_) = stream.master_link(opts.cdn).await {
         println!("Stream not available yet, will check again soon...");
         task::sleep(Duration::from_secs(60 * 30)).await;
     }
-    let link = stream.master_link(&opts.cdn).await?;
+    let link = stream.master_link(opts.cdn).await?;
 
-    task::spawn_blocking(move || streamlink(link, game, stream, command, restart, proxy, offset))
-        .await?;
+    task::spawn_blocking(move || {
+        streamlink(link, game, stream, command, restart, proxy, offset, quality)
+    })
+    .await?;
 
     Ok(())
 }
@@ -61,6 +63,7 @@ async fn process_play(
         bool,
         Option<Uri>,
         Option<String>,
+        Option<Quality>,
     ),
     Error,
 > {
@@ -81,6 +84,7 @@ async fn process_play(
                 *restart,
                 proxy.clone(),
                 offset.clone(),
+                opts.quality,
             ))
         }
         PlayCommand::Team {
@@ -99,7 +103,7 @@ async fn process_play(
                 println!("Game found for today");
 
                 let stream = game
-                    .stream_with_feed_or_default(feed_type, team_abbrev)
+                    .stream_with_feed_or_default(*feed_type, team_abbrev)
                     .await?;
                 println!("Using stream feed {}", stream.feed_type);
 
@@ -111,6 +115,7 @@ async fn process_play(
                     *restart,
                     proxy.clone(),
                     offset.clone(),
+                    opts.quality,
                 ))
             } else {
                 bail!("There are no games today for {}", team_abbrev);
@@ -130,6 +135,7 @@ async fn process_record(
         bool,
         Option<Uri>,
         Option<String>,
+        Option<Quality>,
     ),
     Error,
 > {
@@ -151,6 +157,7 @@ async fn process_record(
                 *restart,
                 proxy.clone(),
                 offset.clone(),
+                opts.quality,
             ))
         }
         RecordCommand::Team {
@@ -171,7 +178,7 @@ async fn process_record(
                 println!("Game found for today");
 
                 let stream = game
-                    .stream_with_feed_or_default(feed_type, team_abbrev)
+                    .stream_with_feed_or_default(*feed_type, team_abbrev)
                     .await?;
                 println!("Using stream feed {}", stream.feed_type);
 
@@ -183,6 +190,7 @@ async fn process_record(
                     *restart,
                     proxy.clone(),
                     offset.clone(),
+                    opts.quality,
                 ))
             } else {
                 bail!("There are no games today for {}", team_abbrev);
@@ -202,6 +210,7 @@ async fn process_cast(
         bool,
         Option<Uri>,
         Option<String>,
+        Option<Quality>,
     ),
     Error,
 > {
@@ -237,6 +246,7 @@ async fn process_cast(
                 *restart,
                 proxy.clone(),
                 offset.clone(),
+                opts.quality,
             ))
         }
         CastCommand::Team {
@@ -255,7 +265,7 @@ async fn process_cast(
                 println!("Game found for today");
 
                 let stream = game
-                    .stream_with_feed_or_default(feed_type, team_abbrev)
+                    .stream_with_feed_or_default(*feed_type, team_abbrev)
                     .await?;
                 println!("Using stream feed {}", stream.feed_type);
 
@@ -267,6 +277,7 @@ async fn process_cast(
                     *restart,
                     proxy.clone(),
                     offset.clone(),
+                    opts.quality,
                 ))
             } else {
                 bail!("There are no games today for {}", team_abbrev);
@@ -325,6 +336,7 @@ impl From<&CastCommand> for StreamlinkCommand {
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn streamlink(
     link: String,
     game: Game,
@@ -333,6 +345,7 @@ fn streamlink(
     restart: bool,
     proxy: Option<Uri>,
     offset: Option<String>,
+    quality: Option<Quality>,
 ) -> Result<(), Error> {
     match &command {
         StreamlinkCommand::Play { .. } => {
@@ -360,11 +373,23 @@ fn streamlink(
         "cvlc"
     };
 
-    let hls_link = format!("hlsvariant://{}", link);
+    let hls_link = if quality == Some(Quality::_720p60) {
+        format!("hlsvariant://{} name_key=bitrate", link)
+    } else {
+        format!("hlsvariant://{}", link)
+    };
+
+    let quality_str = if quality == Some(Quality::_720p60) {
+        "best"
+    } else if let Some(quality) = quality {
+        quality.to_streamlink_quality()
+    } else {
+        "best"
+    };
 
     let mut args = vec![
         hls_link.as_str(),
-        "best",
+        quality_str,
         "--force",
         "--http-no-ssl-verify",
         "--hls-segment-threads",
