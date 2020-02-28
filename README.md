@@ -1,6 +1,11 @@
 # LazyStream
 [![Build Status](https://dev.azure.com/tarkah/lazystream/_apis/build/status/tarkah.lazystream?branchName=master)](https://dev.azure.com/tarkah/lazystream/_build/latest?definitionId=11&branchName=master)
 
+
+  - [Overview](#overview)
+  - [Shell Completions](#shell-completions)
+
+## Overview
 Easily get LazyMan stream links, output directly or to m3u / xmltv formats. Streams can also be recorded or casted.
 
 - Supports both NHL and MLB games. Use `--sport` option to specify `mlb` or `nhl` [default: nhl]
@@ -74,4 +79,12 @@ Pick a stream...
 >>> 2
 
 http://nhl.freegamez.ga/getM3U8.php?league=nhl&date=2019-12-05&id=70395003&cdn=akc
+```
+
+## Shell Completions
+
+Shell completions can be generated for Bash, Fish and Zsh. Target shell and target directory must be supplied.
+
+```
+lazystream completions bash ~/.local/share/bash-completion/completions/
 ```
