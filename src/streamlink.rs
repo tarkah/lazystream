@@ -44,10 +44,18 @@ async fn process(opts: Opt) -> Result<(), Error> {
     }
     let link = stream.master_link(opts.cdn).await?;
 
-    task::spawn_blocking(move || {
-        streamlink(link, game, stream, command, restart, proxy, offset, quality)
-    })
-    .await?;
+    let args = StreamlinkArgs {
+        link,
+        game,
+        stream,
+        command,
+        restart,
+        proxy,
+        offset,
+        quality,
+    };
+
+    task::spawn_blocking(move || streamlink(args)).await?;
 
     Ok(())
 }
@@ -336,18 +344,19 @@ impl From<&CastCommand> for StreamlinkCommand {
     }
 }
 
-#[allow(clippy::too_many_arguments)]
-fn streamlink(
+struct StreamlinkArgs {
     link: String,
     game: Game,
     stream: Stream,
-    mut command: StreamlinkCommand,
+    command: StreamlinkCommand,
     restart: bool,
     proxy: Option<Uri>,
     offset: Option<String>,
     quality: Option<Quality>,
-) -> Result<(), Error> {
-    match &command {
+}
+
+fn streamlink(mut args: StreamlinkArgs) -> Result<(), Error> {
+    match &args.command {
         StreamlinkCommand::Play { .. } => {
             println!("Passing game to VLC...\n\n============================\n")
         }
@@ -367,27 +376,27 @@ fn streamlink(
 
     let vlc_cmd = if cfg!(target_os = "windows") {
         "vlc.exe"
-    } else if let StreamlinkCommand::Play { .. } = command {
+    } else if let StreamlinkCommand::Play { .. } = args.command {
         "vlc"
     } else {
         "cvlc"
     };
 
-    let hls_link = if quality == Some(Quality::_720p60) || quality == None {
-        format!("hlsvariant://{} name_key=bitrate", link)
+    let hls_link = if args.quality == Some(Quality::_720p60) || args.quality == None {
+        format!("hlsvariant://{} name_key=bitrate", args.link)
     } else {
-        format!("hlsvariant://{}", link)
+        format!("hlsvariant://{}", args.link)
     };
 
-    let quality_str = if quality == Some(Quality::_720p60) {
+    let quality_str = if args.quality == Some(Quality::_720p60) {
         "best"
-    } else if let Some(quality) = quality {
+    } else if let Some(quality) = args.quality {
         quality.to_streamlink_quality()
     } else {
         "best"
     };
 
-    let mut args = vec![
+    let mut command_args = vec![
         hls_link.as_str(),
         quality_str,
         "--force",
@@ -400,62 +409,66 @@ fn streamlink(
          Chrome/59.0.3071.115 Safari/537.36",
     ];
 
-    if restart {
-        args.push("--hls-live-restart");
+    if args.restart {
+        command_args.push("--hls-live-restart");
     }
 
     let mut _proxy = String::new();
-    if let Some(ref proxy) = proxy {
+    if let Some(ref proxy) = args.proxy {
         _proxy = proxy.to_string();
-        args.push("--https-proxy");
-        args.push(&_proxy);
+        command_args.push("--https-proxy");
+        command_args.push(&_proxy);
     }
 
     let mut _offset = String::new();
-    if let Some(offset) = offset {
+    if let Some(offset) = args.offset {
         _offset = offset;
-        args.push("--hls-start-offset");
-        args.push(&_offset);
+        command_args.push("--hls-start-offset");
+        command_args.push(&_offset);
     }
 
     let mut _arg;
-    match &mut command {
+    match &mut args.command {
         StreamlinkCommand::Play { passthrough } => {
             let title = format!(
                 "{} @ {} - {} - {}",
-                game.away_team.name,
-                game.home_team.name,
-                stream.feed_type,
-                game.game_date
+                args.game.away_team.name,
+                args.game.home_team.name,
+                args.stream.feed_type,
+                args.game
+                    .game_date
                     .with_timezone(&Local)
                     .format("%Y-%m-%d %-I:%M %p"),
             );
             _arg = title;
 
-            args.push("--player");
-            args.push(vlc_cmd);
-            args.push("--title");
-            args.push(_arg.as_str());
+            command_args.push("--player");
+            command_args.push(vlc_cmd);
+            command_args.push("--title");
+            command_args.push(_arg.as_str());
 
             if *passthrough {
-                args.push("--player-passthrough");
-                args.push("hls");
+                command_args.push("--player-passthrough");
+                command_args.push("hls");
             }
         }
         StreamlinkCommand::Record { output } => {
             let filename = format!(
                 "{} {} @ {} {}.mp4",
-                game.game_date.with_timezone(&Local).format("%Y-%m-%d %H%M"),
-                game.away_team.name,
-                game.home_team.name,
-                stream.feed_type
+                args.game
+                    .game_date
+                    .with_timezone(&Local)
+                    .format("%Y-%m-%d %H%M"),
+                args.game.away_team.name,
+                args.game.home_team.name,
+                args.stream.feed_type
             );
             output.push(filename);
 
             _arg = output.display().to_string();
 
-            args.push("-o");
-            args.push(_arg.as_str());
+            command_args.push("-o");
+            command_args.push(_arg.as_str());
         }
         StreamlinkCommand::Cast { cast_ip } => {
             _arg = if cfg!(target_os = "windows") {
@@ -474,13 +487,13 @@ fn streamlink(
                 )
             };
 
-            args.push("--player");
-            args.push(_arg.as_str());
+            command_args.push("--player");
+            command_args.push(_arg.as_str());
         }
     }
 
     let result = std::process::Command::new(cmd)
-        .args(args)
+        .args(command_args)
         .stdout(Stdio::inherit())
         .spawn()?
         .wait()?;
@@ -489,7 +502,7 @@ fn streamlink(
         bail!("StreamLink failed");
     }
 
-    match &command {
+    match &args.command {
         StreamlinkCommand::Play { .. } => {
             println!("\n============================\n\nPlayback finshed")
         }
