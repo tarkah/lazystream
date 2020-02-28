@@ -278,7 +278,7 @@ fn parse_date(src: &str) -> Result<NaiveDate, ParseError> {
     NaiveDate::parse_from_str(&s, "%Y%m%d")
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub enum Cdn {
     Akc,
     L3c,
@@ -312,7 +312,7 @@ impl std::fmt::Display for Cdn {
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Quality {
     _720p60,
     _720p,
@@ -366,7 +366,22 @@ impl std::fmt::Display for Quality {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
+impl Quality {
+    pub fn to_streamlink_quality<'a>(self) -> &'a str {
+        match self {
+            Quality::_720p60 => "720p_alt",
+            Quality::_720p => "720p",
+            Quality::_540p => "540p",
+            Quality::_504p => "504p",
+            Quality::_360p => "360p",
+            Quality::_288p => "288p",
+            Quality::_224p => "224p",
+            Quality::_216p => "216p",
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Hash, Eq, PartialOrd, Ord)]
 pub enum FeedType {
     Home,
     Away,

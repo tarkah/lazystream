@@ -1,7 +1,9 @@
 use crate::{
-    api::client::Client,
-    api::model::{
-        GameContentArticleMediaImageCut, GameContentEditorialItem, GameContentResponse, Team,
+    api::{
+        client::Client,
+        model::{
+            GameContentArticleMediaImageCut, GameContentEditorialItem, GameContentResponse, Team,
+        },
     },
     opt::{Cdn, FeedType, Opt, Quality, Sport},
     HOST,
@@ -97,7 +99,7 @@ impl LazyStream {
     }
 
     #[allow(clippy::drop_ref)]
-    pub async fn resolve_with_master_link(&mut self, cdn: &Cdn) {
+    pub async fn resolve_with_master_link(&mut self, cdn: Cdn) {
         let tasks: Vec<_> = self
             .games
             .iter_mut()
@@ -111,7 +113,7 @@ impl LazyStream {
     }
 
     #[allow(clippy::drop_ref)]
-    pub async fn resolve_with_quality_link(&mut self, cdn: &Cdn, quality: &Quality) {
+    pub async fn resolve_with_quality_link(&mut self, cdn: Cdn, quality: Quality) {
         let tasks: Vec<_> = self
             .games
             .iter_mut()
@@ -182,7 +184,7 @@ impl Game {
                                     let stream = Stream::new(
                                         id,
                                         self.sport,
-                                        feed_type.clone(),
+                                        feed_type,
                                         self.game_date,
                                         self.selected_date,
                                     );
@@ -243,7 +245,7 @@ impl Game {
 
     pub async fn stream_with_feed_or_default(
         &mut self,
-        feed_type: &Option<FeedType>,
+        feed_type: Option<FeedType>,
         team_abbrev: &str,
     ) -> Result<Stream, Error> {
         let mut streams = if self.streams.is_none() {
@@ -253,7 +255,7 @@ impl Game {
         };
 
         let mut feed_type: FeedType = if let Some(feed_type) = feed_type {
-            feed_type.clone()
+            feed_type
         } else if self.home_team.abbreviation == team_abbrev {
             FeedType::Home
         } else {
@@ -282,7 +284,7 @@ impl Game {
     }
 
     #[allow(clippy::drop_ref)]
-    async fn resolve_streams_master_link(&mut self, cdn: &Cdn) {
+    async fn resolve_streams_master_link(&mut self, cdn: Cdn) {
         if self.streams.is_none() {
             self.resolve_streams().await;
         }
@@ -302,7 +304,7 @@ impl Game {
     }
 
     #[allow(clippy::drop_ref)]
-    async fn resolve_streams_quality_link(&mut self, cdn: &Cdn, quality: &Quality) {
+    async fn resolve_streams_quality_link(&mut self, cdn: Cdn, quality: Quality) {
         if self.streams.is_none() {
             self.resolve_streams().await;
         }
@@ -354,7 +356,7 @@ impl Stream {
         }
     }
 
-    pub fn host_link(&self, cdn: &Cdn) -> String {
+    pub fn host_link(&self, cdn: Cdn) -> String {
         format!(
             "{}/getM3U8.php?league={}&date={}&id={}&cdn={}",
             HOST,
@@ -365,7 +367,7 @@ impl Stream {
         )
     }
 
-    pub async fn master_link(&mut self, cdn: &Cdn) -> Result<String, Error> {
+    pub async fn master_link(&mut self, cdn: Cdn) -> Result<String, Error> {
         if self.master_link.is_none() {
             match get_master_link(&self.host_link(cdn)).await {
                 Ok(master_link) => {
@@ -384,7 +386,7 @@ impl Stream {
         }
     }
 
-    pub async fn quality_link(&mut self, cdn: &Cdn, quality: &Quality) -> Result<String, Error> {
+    pub async fn quality_link(&mut self, cdn: Cdn, quality: Quality) -> Result<String, Error> {
         if self.quality_link.is_none() {
             if self.master_m3u8.is_none() {
                 if let Ok(master_link) = self.master_link(cdn).await {
@@ -419,11 +421,11 @@ impl Stream {
         }
     }
 
-    async fn resolve_master_link(&mut self, cdn: &Cdn) {
+    async fn resolve_master_link(&mut self, cdn: Cdn) {
         let _ = self.master_link(cdn).await;
     }
 
-    async fn resolve_quality_link(&mut self, cdn: &Cdn, quality: &Quality) {
+    async fn resolve_quality_link(&mut self, cdn: Cdn, quality: Quality) {
         let _ = self.quality_link(cdn, quality).await;
     }
 }
@@ -479,15 +481,15 @@ async fn get_master_m3u8(url: &str) -> Result<String, Error> {
 fn get_quality_link(
     master_link: &str,
     master_m3u8: &str,
-    quality: &Quality,
+    quality: Quality,
 ) -> Result<String, Error> {
     let quality_str: &str = quality.clone().into();
     let quality_check = format!("x{}", quality_str);
 
     let mut quality_idx = None;
     for (idx, line) in master_m3u8.lines().enumerate() {
-        if (quality == &Quality::_720p60 && line.contains("FRAME-RATE"))
-            || (quality != &Quality::_720p60 && line.contains(&quality_check))
+        if (quality == Quality::_720p60 && line.contains("FRAME-RATE"))
+            || (quality != Quality::_720p60 && line.contains(&quality_check))
         {
             quality_idx = Some(idx + 1);
         }

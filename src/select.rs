@@ -81,12 +81,12 @@ pub async fn process(opts: &Opt, need_return: bool) -> Result<(Game, Stream), Er
     let feed_choice = &feeds[(feed_choice - 1)];
     let mut stream = streams.remove(feed_choice).unwrap();
 
-    let host_link = stream.host_link(&lazy_stream.opts.cdn);
+    let host_link = stream.host_link(lazy_stream.opts.cdn);
 
-    let cdn = &lazy_stream.opts.cdn;
+    let cdn = lazy_stream.opts.cdn;
     if !need_return {
         println!();
-        if let Some(ref quality) = lazy_stream.opts.quality {
+        if let Some(quality) = lazy_stream.opts.quality {
             let quality_link = stream.quality_link(cdn, quality).await?;
             println!("{}", quality_link);
         } else if resolve {
