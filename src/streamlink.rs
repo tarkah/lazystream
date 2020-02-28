@@ -373,7 +373,7 @@ fn streamlink(
         "cvlc"
     };
 
-    let hls_link = if quality == Some(Quality::_720p60) {
+    let hls_link = if quality == Some(Quality::_720p60) || quality == None {
         format!("hlsvariant://{} name_key=bitrate", link)
     } else {
         format!("hlsvariant://{}", link)
