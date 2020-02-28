@@ -3,6 +3,7 @@ use colored::Colorize;
 use failure::Error;
 
 mod api;
+mod completions;
 mod generate;
 mod opt;
 mod select;
@@ -27,6 +28,7 @@ fn main() {
         OutputType::Play(opts) => crate::streamlink::run(opts),
         OutputType::Record(opts) => crate::streamlink::run(opts),
         OutputType::Cast(opts) => crate::streamlink::run(opts),
+        OutputType::Completions(opts) => crate::completions::run(opts),
     }
 }
 
