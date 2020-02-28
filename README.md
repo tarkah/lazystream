@@ -23,7 +23,7 @@ Easily get LazyMan stream links, output directly or to m3u / xmltv formats. Stre
 ```
 ❯ lazystream --help
 
-lazystream 1.9.5
+lazystream 1.9.6
 tarkah <admin@tarkah.dev>
 Easily get LazyMan stream links, output directly or to m3u / xmltv formats. Streams can also be recorded or casted.
 
@@ -35,18 +35,20 @@ FLAGS:
     -V, --version    Prints version information
 
 OPTIONS:
-        --sport <sport>        Specify which sport to get streams for: 'mlb' or 'nhl' [default: nhl]
+        --sport <sport>        Specify which sport to get streams for [default: nhl]  [possible values: mlb, nhl]
         --date <YYYYMMDD>      Specify what date to use for games, defaults to today
-        --cdn <cdn>            Specify which CDN to use: 'akc' or 'l3c' [default: akc]
-        --quality <quality>    Specify a quality to use, otherwise stream will be adaptive
+        --cdn <cdn>            Specify which CDN to use [default: akc]  [possible values: akc, l3c]
+        --quality <quality>    Specify a quality to use, otherwise stream will be adaptive [possible values: 720p60,
+                               720p, 540p, 504p, 360p, 288p, 224p, 216p]
 
 SUBCOMMANDS:
-    select      Select stream link via command line
-    generate    Generate an xmltv and/or playlist formatted output for all games
-    play        Play a game with VLC, requires StreamLink and VLC
-    record      Record a game, requires StreamLink
-    cast        Cast a game, requires StreamLink and VLC
-    help        Prints this message or the help of the given subcommand(s)
+    select         Select stream link via command line
+    generate       Generate an xmltv and/or playlist formatted output for all games
+    play           Play a game with VLC, requires StreamLink and VLC
+    record         Record a game, requires StreamLink
+    cast           Cast a game, requires StreamLink and VLC
+    completions    Output shell completions to a target directory
+    help           Prints this message or the help of the given subcommand(s)
 
 ❯ lazystream select --sport nhl
 
