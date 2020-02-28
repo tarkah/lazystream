@@ -14,6 +14,7 @@ pub fn parse_opts() -> OutputType {
         Command::Play { .. } => OutputType::Play(opts),
         Command::Record { .. } => OutputType::Record(opts),
         Command::Cast { .. } => OutputType::Cast(opts),
+        Command::Completions { .. } => OutputType::Completions(opts),
     }
 }
 
@@ -28,19 +29,17 @@ pub fn parse_opts() -> OutputType {
 pub struct Opt {
     #[structopt(subcommand)]
     pub command: Command,
-    #[structopt(long, parse(try_from_str), default_value = Sport::Nhl.into(), global = true)]
-    /// Specify which sport to get streams for: 'mlb' or 'nhl'
+    #[structopt(long, parse(try_from_str), default_value = Sport::Nhl.into(), global = true, possible_values(&["mlb","nhl"]))]
+    /// Specify which sport to get streams for
     pub sport: Sport,
     #[structopt(long, parse(try_from_str = parse_date), value_name = "YYYYMMDD", global = true)]
     /// Specify what date to use for games, defaults to today
     pub date: Option<NaiveDate>,
-    #[structopt(long, parse(try_from_str), default_value = Cdn::Akc.into(), global = true)]
-    /// Specify which CDN to use: 'akc' or 'l3c'
+    #[structopt(long, parse(try_from_str), default_value = Cdn::Akc.into(), global = true, possible_values(&["akc","l3c"]))]
+    /// Specify which CDN to use
     pub cdn: Cdn,
-    #[structopt(long, parse(try_from_str), global = true)]
+    #[structopt(long, parse(try_from_str), global = true, possible_values(&["720p60","720p","540p","504p","360p","288p","224p","216p"]))]
     /// Specify a quality to use, otherwise stream will be adaptive
-    ///
-    /// Must be one of: '720p60', '720p', '540p', '504p', '360p', '288p', '224p', '216p'
     pub quality: Option<Quality>,
 }
 
@@ -86,6 +85,16 @@ pub enum Command {
         #[structopt(subcommand)]
         command: CastCommand,
     },
+    #[structopt(usage = "lazystream completions <SHELL> <TARGET_DIR>")]
+    /// Output shell completions to a target directory
+    Completions {
+        #[structopt(name = "SHELL", possible_values(&["bash", "fish", "zsh"]), default_value = "bash")]
+        /// Specify a shell
+        shell: String,
+        #[structopt(name = "TARGET_DIR", parse(from_os_str))]
+        /// Target directory to save completions
+        target: PathBuf,
+    },
 }
 
 #[derive(StructOpt, Debug, PartialEq, Clone)]
@@ -126,7 +135,7 @@ pub enum PlayCommand {
         #[structopt(long)]
         /// If live, restart the stream from the beginning and record the entire thing
         restart: bool,
-        #[structopt(long, parse(try_from_str))]
+        #[structopt(long, parse(try_from_str), possible_values(&["HOME", "AWAY", "FRENCH", "COMPOSITE", "NATIONAL"]))]
         /// Specify the feed type to download. Will default to supplied
         /// team's applicable Home / Away feed
         feed_type: Option<FeedType>,
@@ -145,11 +154,11 @@ pub enum PlayCommand {
 #[derive(StructOpt, Debug, PartialEq, Clone)]
 pub enum RecordCommand {
     #[structopt(
-        usage = "lazystream record select <OUTPUT DIR> [--restart --proxy <PROXY>] [OPTIONS]"
+        usage = "lazystream record select <OUTPUT_DIR> [--restart --proxy <PROXY>] [OPTIONS]"
     )]
     /// Select a game from the command line to record to OUTPUT DIR
     Select {
-        #[structopt(name = "OUTPUT DIR", parse(from_os_str))]
+        #[structopt(name = "OUTPUT_DIR", parse(from_os_str))]
         /// Directory to save game recordings
         output: PathBuf,
         #[structopt(long)]
@@ -163,7 +172,7 @@ pub enum RecordCommand {
         offset: Option<String>,
     },
     #[structopt(
-        usage = "lazystream record team <TEAM> <OUTPUT DIR> [--restart --feed-type <feed-type> --proxy <PROXY>] [OPTIONS]"
+        usage = "lazystream record team <TEAM> <OUTPUT_DIR> [--restart --feed-type <feed-type> --proxy <PROXY>] [OPTIONS]"
     )]
     /// Specify team abbreviation. If / when stream is available, will record to OUTPUT DIR.
     ///
@@ -177,13 +186,13 @@ pub enum RecordCommand {
         #[structopt(name = "TEAM")]
         /// Team abbreviation
         team_abbrev: String,
-        #[structopt(name = "OUTPUT DIR", parse(from_os_str))]
+        #[structopt(name = "OUTPUT_DIR", parse(from_os_str))]
         /// Directory to save game recordings
         output: PathBuf,
         #[structopt(long)]
         /// If live, restart the stream from the beginning and record the entire thing
         restart: bool,
-        #[structopt(long, parse(try_from_str))]
+        #[structopt(long, parse(try_from_str), possible_values(&["HOME", "AWAY", "FRENCH", "COMPOSITE", "NATIONAL"]))]
         /// Specify the feed type to download. Will default to supplied
         /// team's applicable Home / Away feed
         feed_type: Option<FeedType>,
@@ -212,7 +221,7 @@ pub enum CastCommand {
         offset: Option<String>,
     },
     #[structopt(
-        usage = "lazystream cast team <TEAM> <CHROMECAST IP> [--restart --feed-type <feed-type> --proxy <PROXY>] [OPTIONS]"
+        usage = "lazystream cast team <TEAM> <CHROMECAST_IP> [--restart --feed-type <feed-type> --proxy <PROXY>] [OPTIONS]"
     )]
     /// Specify team abbreviation. If / when stream is available, will cast to CHROMECAST IP
     ///
@@ -222,13 +231,13 @@ pub enum CastCommand {
         #[structopt(name = "TEAM")]
         /// Team abbreviation
         team_abbrev: String,
-        #[structopt(name = "CHROMECAST IP", parse(try_from_str))]
+        #[structopt(name = "CHROMECAST_IP", parse(try_from_str))]
         /// IP of the Chromecast
         cast_ip: Ipv4Addr,
         #[structopt(long)]
         /// If live, restart the stream from the beginning and cast the entire thing
         restart: bool,
-        #[structopt(long, parse(try_from_str))]
+        #[structopt(long, parse(try_from_str), possible_values(&["HOME", "AWAY", "FRENCH", "COMPOSITE", "NATIONAL"]))]
         /// Specify the feed type to cast. Will default to supplied
         /// team's applicable Home / Away feed
         feed_type: Option<FeedType>,
@@ -271,6 +280,7 @@ pub enum OutputType {
     Play(Opt),
     Record(Opt),
     Cast(Opt),
+    Completions(Opt),
 }
 
 fn parse_date(src: &str) -> Result<NaiveDate, ParseError> {
