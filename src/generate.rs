@@ -142,7 +142,7 @@ async fn create_playlist(
         for _ in _id..100 {
             let title = format!("{} {}", channel_prefix.unwrap(), id + 1);
             let record = format!(
-                "#EXTINF:-1 CUID=\"{}\" tvg-id=\"{}\" tvg-name=\"{} {}\",{}\n",
+                "#EXTINF:-1 CUID=\"{}\" tvg-id=\"{}\" tvg-name=\"{} {}\",{}\n.\n",
                 start_channel + id,
                 start_channel + id,
                 channel_prefix.unwrap_or("Lazyman"),
