@@ -296,9 +296,16 @@ async fn process_cast(
 
 #[derive(PartialEq)]
 enum StreamlinkCommand {
-    Play { passthrough: bool },
-    Record { output: PathBuf },
-    Cast { cast_ip: Ipv4Addr },
+    Play {
+        passthrough: bool,
+        custom_player: Option<PathBuf>,
+    },
+    Record {
+        output: PathBuf,
+    },
+    Cast {
+        cast_ip: Ipv4Addr,
+    },
 }
 
 impl StreamlinkCommand {
@@ -310,11 +317,21 @@ impl StreamlinkCommand {
 impl From<&PlayCommand> for StreamlinkCommand {
     fn from(cmd: &PlayCommand) -> Self {
         match cmd {
-            PlayCommand::Select { passthrough, .. } => StreamlinkCommand::Play {
+            PlayCommand::Select {
+                passthrough,
+                custom_player,
+                ..
+            } => StreamlinkCommand::Play {
                 passthrough: *passthrough,
+                custom_player: custom_player.clone(),
             },
-            PlayCommand::Team { passthrough, .. } => StreamlinkCommand::Play {
+            PlayCommand::Team {
+                passthrough,
+                custom_player,
+                ..
+            } => StreamlinkCommand::Play {
                 passthrough: *passthrough,
+                custom_player: custom_player.clone(),
             },
         }
     }
@@ -358,7 +375,7 @@ struct StreamlinkArgs {
 fn streamlink(mut args: StreamlinkArgs) -> Result<(), Error> {
     match &args.command {
         StreamlinkCommand::Play { .. } => {
-            println!("Passing game to VLC...\n\n============================\n")
+            println!("Passing game to player...\n\n============================\n")
         }
         StreamlinkCommand::Record { .. } => {
             println!("Recording with StreamLink...\n\n============================\n")
@@ -374,7 +391,7 @@ fn streamlink(mut args: StreamlinkArgs) -> Result<(), Error> {
         "streamlink"
     };
 
-    let vlc_cmd = if cfg!(target_os = "windows") {
+    let mut player_cmd = if cfg!(target_os = "windows") {
         "vlc.exe"
     } else if let StreamlinkCommand::Play { .. } = args.command {
         "vlc"
@@ -429,7 +446,10 @@ fn streamlink(mut args: StreamlinkArgs) -> Result<(), Error> {
 
     let mut _arg;
     match &mut args.command {
-        StreamlinkCommand::Play { passthrough } => {
+        StreamlinkCommand::Play {
+            passthrough,
+            custom_player,
+        } => {
             let title = format!(
                 "{} @ {} - {} - {}",
                 args.game.away_team.name,
@@ -442,8 +462,12 @@ fn streamlink(mut args: StreamlinkArgs) -> Result<(), Error> {
             );
             _arg = title;
 
+            if let Some(player) = custom_player {
+                player_cmd = player.to_str().unwrap();
+            }
+
             command_args.push("--player");
-            command_args.push(vlc_cmd);
+            command_args.push(player_cmd);
             command_args.push("--title");
             command_args.push(_arg.as_str());
 
@@ -476,14 +500,14 @@ fn streamlink(mut args: StreamlinkArgs) -> Result<(), Error> {
                     "{} -I dummy --sout \"#chromecast\" \
                      --sout-chromecast-ip={} \
                      --demux-filter=demux_chromecast",
-                    vlc_cmd, cast_ip,
+                    player_cmd, cast_ip,
                 )
             } else {
                 format!(
                     "{} --sout \"#chromecast\" \
                      --sout-chromecast-ip={} \
                      --demux-filter=demux_chromecast",
-                    vlc_cmd, cast_ip,
+                    player_cmd, cast_ip,
                 )
             };
 

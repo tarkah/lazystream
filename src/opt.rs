@@ -62,7 +62,8 @@ pub enum Command {
     /// Play a game with VLC, requires StreamLink and VLC
     ///
     /// Game can be chosen from command line with 'select' subcommand or supplied
-    /// in advanced with 'team' subcommand
+    /// in advanced with 'team' subcommand. A custom player can be used over VLC, see
+    /// https://streamlink.github.io/players.html for a list of supported players.
     Play {
         #[structopt(subcommand)]
         command: PlayCommand,
@@ -102,7 +103,7 @@ pub enum PlayCommand {
     #[structopt(
         usage = "lazystream play select [--restart --proxy <PROXY> --passthrough] [OPTIONS]"
     )]
-    /// Select a game from the command line to play in VLC
+    /// Select a game from the command line to play in VLC (or --custom-player <PATH>)
     Select {
         #[structopt(long)]
         /// If live, restart the stream from the beginning
@@ -116,18 +117,23 @@ pub enum PlayCommand {
         #[structopt(long, value_name = "[HH:]MM:SS", parse(try_from_str = parse_offset))]
         /// Amount of time to skip from the beginning of the stream. For live streams, this is a negative offset from the end of the stream (rewind).
         offset: Option<String>,
+        #[structopt(long, name = "PATH", parse(from_os_str))]
+        /// Path to custom player supported by Streamlink (VLC, mpv & more)
+        ///
+        /// See https://streamlink.github.io/players.html for list of supported players
+        custom_player: Option<PathBuf>,
     },
     #[structopt(
         usage = "lazystream play team <TEAM> [--restart --feed-type <feed-type> --proxy <PROXY> --passthrough] [OPTIONS]"
     )]
-    /// Specify team abbreviation. If / when stream is available, will play in VLC
+    /// Specify team abbreviation. If / when stream is available, will play in VLC (or --custom-player <PATH>)
     ///
     /// Example: 'lazystream play team VGK' will play the stream for the
     /// Golden Knights game in VLC.
     ///
     /// The program will stay running if a game is scheduled for the day, but stream is not yet
     /// available. Program will periodically check for the stream availability and once live,
-    /// will pass that stream to VLC to play.
+    /// will pass that stream to VLC (or --custom-player <PATH>) to play.
     Team {
         #[structopt(name = "TEAM")]
         /// Team abbreviation
@@ -148,6 +154,11 @@ pub enum PlayCommand {
         #[structopt(long, value_name = "[HH:]MM:SS", parse(try_from_str = parse_offset))]
         /// Amount of time to skip from the beginning of the stream. For live streams, this is a negative offset from the end of the stream (rewind).
         offset: Option<String>,
+        #[structopt(long, name = "PATH", parse(from_os_str))]
+        /// Path to custom player supported by Streamlink (VLC, mpv & more)
+        ///
+        /// See https://streamlink.github.io/players.html for list of supported players
+        custom_player: Option<PathBuf>,
     },
 }
 
