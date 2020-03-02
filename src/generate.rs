@@ -136,6 +136,24 @@ async fn create_playlist(
         }
     }
 
+    // Create additional blank records for all 100 channels
+    if is_xmltv {
+        let _id = id;
+        for _ in _id..100 {
+            let title = format!("{} {}", channel_prefix.unwrap(), id + 1);
+            let record = format!(
+                "#EXTINF:-1 CUID=\"{}\" tvg-id=\"{}\" tvg-name=\"{} {}\",{}\n",
+                start_channel + id,
+                start_channel + id,
+                channel_prefix.unwrap_or("Lazyman"),
+                id + 1,
+                title,
+            );
+            m3u.push_str(&record);
+            id += 1;
+        }
+    }
+
     fs::write(&path, m3u).await?;
 
     println!("Playlist saved to: {:?}", path);
