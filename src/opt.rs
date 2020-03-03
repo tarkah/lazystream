@@ -2,7 +2,7 @@ use crate::VERSION;
 use chrono::{format::ParseError, NaiveDate};
 use failure::{bail, Error};
 use http::Uri;
-use std::{net::Ipv4Addr, path::PathBuf, str::FromStr};
+use std::{path::PathBuf, str::FromStr};
 use structopt::{clap::AppSettings::DeriveDisplayOrder, StructOpt};
 
 pub fn parse_opts() -> OutputType {
@@ -232,9 +232,9 @@ pub enum CastCommand {
         offset: Option<String>,
     },
     #[structopt(
-        usage = "lazystream cast team <TEAM> <CHROMECAST_IP> [--restart --feed-type <feed-type> --proxy <PROXY>] [OPTIONS]"
+        usage = "lazystream cast team <TEAM> <CHROMECAST_HOST> [--restart --feed-type <feed-type> --proxy <PROXY>] [OPTIONS]"
     )]
-    /// Specify team abbreviation. If / when stream is available, will cast to CHROMECAST IP
+    /// Specify team abbreviation. If / when stream is available, will cast to CHROMECAST_HOST
     ///
     /// Example: 'lazystream cast team VGK 192.16.0.100' will cast the stream for the
     /// Golden Knights game to the Chromecast at 192.168.0.100.
@@ -242,9 +242,9 @@ pub enum CastCommand {
         #[structopt(name = "TEAM")]
         /// Team abbreviation
         team_abbrev: String,
-        #[structopt(name = "CHROMECAST_IP", parse(try_from_str))]
-        /// IP of the Chromecast
-        cast_ip: Ipv4Addr,
+        #[structopt(name = "CHROMECAST_HOST")]
+        /// IP / Hostname of the Chromecast
+        cast_host: String,
         #[structopt(long)]
         /// If live, restart the stream from the beginning and cast the entire thing
         restart: bool,

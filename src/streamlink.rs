@@ -245,7 +245,7 @@ async fn process_cast(
             let cast_ip = select_cast_device(cast_devices)?;
             println!("\nUsing cast device {}\n", cast_ip);
 
-            let streamlink_command = StreamlinkCommand::cast_with_ip(cast_ip);
+            let streamlink_command = StreamlinkCommand::cast_with_ip(cast_ip.to_string());
 
             Ok((
                 game,
@@ -304,13 +304,13 @@ enum StreamlinkCommand {
         output: PathBuf,
     },
     Cast {
-        cast_ip: Ipv4Addr,
+        cast_host: String,
     },
 }
 
 impl StreamlinkCommand {
-    fn cast_with_ip(addr: Ipv4Addr) -> Self {
-        StreamlinkCommand::Cast { cast_ip: addr }
+    fn cast_with_ip(addr: String) -> Self {
+        StreamlinkCommand::Cast { cast_host: addr }
     }
 }
 
@@ -354,9 +354,11 @@ impl From<&CastCommand> for StreamlinkCommand {
     fn from(cmd: &CastCommand) -> Self {
         match cmd {
             CastCommand::Select { .. } => StreamlinkCommand::Cast {
-                cast_ip: [0, 0, 0, 0].into(),
+                cast_host: "0.0.0.0".to_owned(),
             },
-            CastCommand::Team { cast_ip, .. } => StreamlinkCommand::Cast { cast_ip: *cast_ip },
+            CastCommand::Team { cast_host, .. } => StreamlinkCommand::Cast {
+                cast_host: cast_host.clone(),
+            },
         }
     }
 }
@@ -494,20 +496,20 @@ fn streamlink(mut args: StreamlinkArgs) -> Result<(), Error> {
             command_args.push("-o");
             command_args.push(_arg.as_str());
         }
-        StreamlinkCommand::Cast { cast_ip } => {
+        StreamlinkCommand::Cast { cast_host } => {
             _arg = if cfg!(target_os = "windows") {
                 format!(
                     "{} -I dummy --sout \"#chromecast\" \
                      --sout-chromecast-ip={} \
                      --demux-filter=demux_chromecast",
-                    player_cmd, cast_ip,
+                    player_cmd, cast_host,
                 )
             } else {
                 format!(
                     "{} --sout \"#chromecast\" \
                      --sout-chromecast-ip={} \
                      --demux-filter=demux_chromecast",
-                    player_cmd, cast_ip,
+                    player_cmd, cast_host,
                 )
             };
 
