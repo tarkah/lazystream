@@ -63,16 +63,7 @@ async fn process(opts: Opt) -> Result<(), Error> {
                 .await?;
 
                 let path = path.with_extension("xml");
-                create_xmltv(
-                    path,
-                    games,
-                    opts.cdn,
-                    opts.quality,
-                    start_channel,
-                    opts.sport,
-                    &channel_prefix,
-                )
-                .await?;
+                create_xmltv(path, games, start_channel, opts.sport, &channel_prefix).await?;
             }
             GenerateCommand::Playlist { file } => {
                 let path = file.with_extension("m3u");
@@ -105,34 +96,32 @@ async fn create_playlist(
                 stream.master_link(cdn).await
             };
 
-            if let Ok(link) = link {
-                let title = if is_xmltv {
-                    format!("{} {}", channel_prefix.unwrap(), id + 1)
-                } else {
-                    format!(
-                        "{} {} @ {} {}",
-                        game.game_date
-                            .with_timezone(&Local)
-                            .time()
-                            .format("%-I:%M %p")
-                            .to_string(),
-                        game.away_team.team_name,
-                        game.home_team.team_name,
-                        stream.feed_type,
-                    )
-                };
-                let record = format!(
-                    "#EXTINF:-1 CUID=\"{}\" tvg-id=\"{}\" tvg-name=\"{} {}\",{}\n{}\n",
-                    start_channel + id,
-                    start_channel + id,
-                    channel_prefix.unwrap_or("Lazyman"),
-                    id + 1,
-                    title,
-                    link
-                );
-                m3u.push_str(&record);
-                id += 1;
-            }
+            let title = if is_xmltv {
+                format!("{} {}", channel_prefix.unwrap(), id + 1)
+            } else {
+                format!(
+                    "{} {} @ {} {}",
+                    game.game_date
+                        .with_timezone(&Local)
+                        .time()
+                        .format("%-I:%M %p")
+                        .to_string(),
+                    game.away_team.team_name,
+                    game.home_team.team_name,
+                    stream.feed_type,
+                )
+            };
+            let record = format!(
+                "#EXTINF:-1 CUID=\"{}\" tvg-id=\"{}\" tvg-name=\"{} {}\",{}\n{}\n",
+                start_channel + id,
+                start_channel + id,
+                channel_prefix.unwrap_or("Lazyman"),
+                id + 1,
+                title,
+                link.unwrap_or_else(|_| ".".to_string())
+            );
+            m3u.push_str(&record);
+            id += 1;
         }
     }
 
@@ -164,8 +153,6 @@ async fn create_playlist(
 async fn create_xmltv(
     path: PathBuf,
     mut games: Vec<Game>,
-    cdn: Cdn,
-    quality: Option<Quality>,
     start_channel: u32,
     sport: Sport,
     channel_prefix: &str,
@@ -220,45 +207,37 @@ async fn create_xmltv(
         let description = game.description().await.unwrap_or_else(|| String::from(""));
 
         for (_, stream) in game.streams.as_mut().unwrap().iter_mut() {
-            let link = if let Some(quality) = quality {
-                stream.quality_link(cdn, quality).await
-            } else {
-                stream.master_link(cdn).await
-            };
+            let start = game.game_date.with_timezone(&Local);
+            let stop = Local::now();
+            let title = format!(
+                "{} {} {} @ {}",
+                game.game_date
+                    .with_timezone(&Local)
+                    .time()
+                    .format("%-I:%M %p")
+                    .to_string(),
+                stream.feed_type,
+                game.away_team.team_name,
+                game.home_team.team_name,
+            );
 
-            if link.is_ok() {
-                let start = Local::now();
-                let stop = Local::now();
-                let title = format!(
-                    "{} {} {} @ {}",
-                    game.game_date
-                        .with_timezone(&Local)
-                        .time()
-                        .format("%-I:%M %p")
-                        .to_string(),
-                    stream.feed_type,
-                    game.away_team.team_name,
-                    game.home_team.team_name,
-                );
-
-                let record = format!(
-                    "\n    <programme channel=\"{}\" start=\"{}000000 {}\" stop=\"{}235959 {}\">\
+            let record = format!(
+                "\n    <programme channel=\"{}\" start=\"{} {}\" stop=\"{}235959 {}\">\
                      \n      <title lang=\"en\">{}</title>\
                      \n      <desc lang=\"en\">{}</desc>\
                      {}\
                      \n    </programme>",
-                    start_channel + id,
-                    start.format("%Y%m%d"),
-                    start.format("%z"),
-                    stop.format("%Y%m%d"),
-                    stop.format("%z"),
-                    title,
-                    description,
-                    icons,
-                );
-                xmltv.push_str(&record);
-                id += 1;
-            }
+                start_channel + id,
+                start.format("%Y%m%d%H%M%S"),
+                start.format("%z"),
+                stop.format("%Y%m%d"),
+                stop.format("%z"),
+                title,
+                description,
+                icons,
+            );
+            xmltv.push_str(&record);
+            id += 1;
         }
     }
 
