@@ -6,12 +6,20 @@ use crate::{
 use async_std::{process, task};
 use chrono::Local;
 use failure::{bail, format_err, Error, ResultExt};
-use http::Uri;
+use http::{uri::PathAndQuery, Uri};
 use mdns::RecordKind;
 use read_input::prelude::*;
 use std::{
-    collections::HashMap, io::Write, net::Ipv4Addr, path::PathBuf, process::Stdio, time::Duration,
+    collections::HashMap,
+    io::Write,
+    net::{IpAddr, Ipv4Addr},
+    path::PathBuf,
+    process::Stdio,
+    time::Duration,
 };
+
+/// Fallback for when DNS lookup fails
+const FALLBACK_KEY_SEGMENT_IP: IpAddr = IpAddr::V4(Ipv4Addr::new(165, 22, 201, 101));
 
 pub fn run(opts: Opt) {
     task::block_on(async {
@@ -44,6 +52,13 @@ async fn process(opts: Opt) -> Result<(), Error> {
     }
     let link = stream.master_link(opts.cdn).await?;
 
+    let segment_key_uri = {
+        match crate::stream::get_m3u8(&link).await {
+            Ok(master_m3u8) => crate::stream::get_segment_key_uri(&link, &master_m3u8).await,
+            Err(e) => Err(e),
+        }
+    };
+
     let args = StreamlinkArgs {
         link,
         game,
@@ -53,6 +68,7 @@ async fn process(opts: Opt) -> Result<(), Error> {
         proxy,
         offset,
         quality,
+        segment_key_uri,
     };
 
     task::spawn_blocking(move || streamlink(args)).await?;
@@ -372,6 +388,7 @@ struct StreamlinkArgs {
     proxy: Option<Uri>,
     offset: Option<String>,
     quality: Option<Quality>,
+    segment_key_uri: Result<Uri, Error>,
 }
 
 fn streamlink(mut args: StreamlinkArgs) -> Result<(), Error> {
@@ -427,6 +444,46 @@ fn streamlink(mut args: StreamlinkArgs) -> Result<(), Error> {
          Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko \
          Chrome/59.0.3071.115 Safari/537.36",
     ];
+
+    // If we couldn't get the actual segment key uri or building it with the
+    // "proxied" IP fails for some reason, print error but still try to connect
+    // (in case user has hosts file updated)
+    let mut _uri = String::new();
+    match args.segment_key_uri {
+        Ok(segment_key_uri) => {
+            let host_lookup = dns_lookup::lookup_host("freegamez.ga")?;
+            let proxied_key_ip = host_lookup.get(0).unwrap_or(&FALLBACK_KEY_SEGMENT_IP);
+
+            let proxied_key_uri = http::uri::Builder::new()
+                .scheme(segment_key_uri.scheme_str().unwrap_or(""))
+                .authority(proxied_key_ip.to_string().as_str())
+                .path_and_query(
+                    segment_key_uri
+                        .path_and_query()
+                        .unwrap_or(&PathAndQuery::from_static(""))
+                        .as_str(),
+                )
+                .build()
+                .ok();
+
+            if let Some(uri) = proxied_key_uri {
+                _uri = uri.to_string();
+
+                println!("[lazystream][info] Proxying segment key url to: {}", _uri);
+
+                command_args.push("--hls-segment-key-uri");
+                command_args.push(_uri.as_str());
+            } else {
+                println!("[lazystream][warning] Could not proxy segment key url");
+            }
+        }
+        Err(e) => {
+            println!(
+                "[lazystream][warning] Could not proxy segment key url: {}",
+                e
+            );
+        }
+    }
 
     if args.restart {
         command_args.push("--hls-live-restart");
