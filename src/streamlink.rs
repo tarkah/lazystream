@@ -443,6 +443,8 @@ fn streamlink(mut args: StreamlinkArgs) -> Result<(), Error> {
         "User-Agent=User-Agent=Mozilla/5.0 (Windows NT 10.0; \
          Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko \
          Chrome/59.0.3071.115 Safari/537.36",
+        "--hls-audio-select",
+        "*",
     ];
 
     // If we couldn't get the actual segment key uri or building it with the
