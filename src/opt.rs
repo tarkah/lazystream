@@ -181,6 +181,9 @@ pub enum RecordCommand {
         #[structopt(long, value_name = "[HH:]MM:SS", parse(try_from_str = parse_offset))]
         /// Amount of time to skip from the beginning of the stream. For live streams, this is a negative offset from the end of the stream (rewind).
         offset: Option<String>,
+        #[structopt(long)]
+        /// Specify the name / language of the audio source you'd like to use E.g. "en" or "English" for English track
+        audio_source: Option<String>,
     },
     #[structopt(
         usage = "lazystream record team <TEAM> <OUTPUT_DIR> [--restart --feed-type <feed-type> --proxy <PROXY>] [OPTIONS]"
@@ -213,6 +216,9 @@ pub enum RecordCommand {
         #[structopt(long, value_name = "[HH:]MM:SS", parse(try_from_str = parse_offset))]
         /// Amount of time to skip from the beginning of the stream. For live streams, this is a negative offset from the end of the stream (rewind).
         offset: Option<String>,
+        #[structopt(long)]
+        /// Specify the name / language of the audio source you'd like to use E.g. "en" or "English" for English track
+        audio_source: Option<String>,
     },
 }
 
@@ -230,6 +236,9 @@ pub enum CastCommand {
         #[structopt(long, value_name = "[HH:]MM:SS", parse(try_from_str = parse_offset))]
         /// Amount of time to skip from the beginning of the stream. For live streams, this is a negative offset from the end of the stream (rewind).
         offset: Option<String>,
+        #[structopt(long)]
+        /// Specify the name / language of the audio source you'd like to use E.g. "en" or "English" for English track
+        audio_source: Option<String>,
     },
     #[structopt(
         usage = "lazystream cast team <TEAM> <CHROMECAST_HOST> [--restart --feed-type <feed-type> --proxy <PROXY>] [OPTIONS]"
@@ -258,6 +267,9 @@ pub enum CastCommand {
         #[structopt(long, value_name = "[HH:]MM:SS", parse(try_from_str = parse_offset))]
         /// Amount of time to skip from the beginning of the stream. For live streams, this is a negative offset from the end of the stream (rewind).
         offset: Option<String>,
+        #[structopt(long)]
+        /// Specify the name / language of the audio source you'd like to use E.g. "en" or "English" for English track
+        audio_source: Option<String>,
     },
 }
 

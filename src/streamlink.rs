@@ -169,6 +169,7 @@ async fn process_record(
             restart,
             proxy,
             offset,
+            ..
         } => {
             check_output(&output)?;
             let (game, stream) = crate::select::process(opts, true).await?;
@@ -191,6 +192,7 @@ async fn process_record(
             output,
             proxy,
             offset,
+            ..
         } => {
             check_output(&output)?;
 
@@ -248,6 +250,7 @@ async fn process_cast(
             restart,
             proxy,
             offset,
+            audio_source,
         } => {
             let (game, stream) = crate::select::process(opts, true).await?;
 
@@ -261,7 +264,8 @@ async fn process_cast(
             let cast_ip = select_cast_device(cast_devices)?;
             println!("\nUsing cast device {}\n", cast_ip);
 
-            let streamlink_command = StreamlinkCommand::cast_with_ip(cast_ip.to_string());
+            let streamlink_command =
+                StreamlinkCommand::cast_with_ip(cast_ip.to_string(), audio_source.clone());
 
             Ok((
                 game,
@@ -318,15 +322,20 @@ enum StreamlinkCommand {
     },
     Record {
         output: PathBuf,
+        audio_source: Option<String>,
     },
     Cast {
         cast_host: String,
+        audio_source: Option<String>,
     },
 }
 
 impl StreamlinkCommand {
-    fn cast_with_ip(addr: String) -> Self {
-        StreamlinkCommand::Cast { cast_host: addr }
+    fn cast_with_ip(addr: String, audio_source: Option<String>) -> Self {
+        StreamlinkCommand::Cast {
+            cast_host: addr,
+            audio_source,
+        }
     }
 }
 
@@ -356,11 +365,21 @@ impl From<&PlayCommand> for StreamlinkCommand {
 impl From<&RecordCommand> for StreamlinkCommand {
     fn from(cmd: &RecordCommand) -> Self {
         match cmd {
-            RecordCommand::Select { output, .. } => StreamlinkCommand::Record {
+            RecordCommand::Select {
+                output,
+                audio_source,
+                ..
+            } => StreamlinkCommand::Record {
                 output: output.clone(),
+                audio_source: audio_source.clone(),
             },
-            RecordCommand::Team { output, .. } => StreamlinkCommand::Record {
+            RecordCommand::Team {
+                output,
+                audio_source,
+                ..
+            } => StreamlinkCommand::Record {
                 output: output.clone(),
+                audio_source: audio_source.clone(),
             },
         }
     }
@@ -369,11 +388,17 @@ impl From<&RecordCommand> for StreamlinkCommand {
 impl From<&CastCommand> for StreamlinkCommand {
     fn from(cmd: &CastCommand) -> Self {
         match cmd {
-            CastCommand::Select { .. } => StreamlinkCommand::Cast {
+            CastCommand::Select { audio_source, .. } => StreamlinkCommand::Cast {
                 cast_host: "0.0.0.0".to_owned(),
+                audio_source: audio_source.clone(),
             },
-            CastCommand::Team { cast_host, .. } => StreamlinkCommand::Cast {
+            CastCommand::Team {
+                cast_host,
+                audio_source,
+                ..
+            } => StreamlinkCommand::Cast {
                 cast_host: cast_host.clone(),
+                audio_source: audio_source.clone(),
             },
         }
     }
@@ -443,8 +468,6 @@ fn streamlink(mut args: StreamlinkArgs) -> Result<(), Error> {
         "User-Agent=User-Agent=Mozilla/5.0 (Windows NT 10.0; \
          Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko \
          Chrome/59.0.3071.115 Safari/537.36",
-        "--hls-audio-select",
-        "*",
     ];
 
     // If we couldn't get the actual segment key uri or building it with the
@@ -527,6 +550,8 @@ fn streamlink(mut args: StreamlinkArgs) -> Result<(), Error> {
                 player_cmd = player.to_str().unwrap();
             }
 
+            command_args.push("--hls-audio-select");
+            command_args.push("*");
             command_args.push("--player");
             command_args.push(player_cmd);
             command_args.push("--title");
@@ -537,7 +562,10 @@ fn streamlink(mut args: StreamlinkArgs) -> Result<(), Error> {
                 command_args.push("hls");
             }
         }
-        StreamlinkCommand::Record { output } => {
+        StreamlinkCommand::Record {
+            output,
+            audio_source,
+        } => {
             let filename = format!(
                 "{} {} @ {} {}.mp4",
                 args.game
@@ -550,12 +578,20 @@ fn streamlink(mut args: StreamlinkArgs) -> Result<(), Error> {
             );
             output.push(filename);
 
+            if let Some(source) = audio_source {
+                command_args.push("--hls-audio-select");
+                command_args.push(source.as_str());
+            }
+
             _arg = output.display().to_string();
 
             command_args.push("-o");
             command_args.push(_arg.as_str());
         }
-        StreamlinkCommand::Cast { cast_host } => {
+        StreamlinkCommand::Cast {
+            cast_host,
+            audio_source,
+        } => {
             _arg = if cfg!(target_os = "windows") {
                 format!(
                     "{} -I dummy --sout \"#chromecast\" \
@@ -571,6 +607,11 @@ fn streamlink(mut args: StreamlinkArgs) -> Result<(), Error> {
                     player_cmd, cast_host,
                 )
             };
+
+            if let Some(source) = audio_source {
+                command_args.push("--hls-audio-select");
+                command_args.push(source.as_str());
+            }
 
             command_args.push("--player");
             command_args.push(_arg.as_str());
