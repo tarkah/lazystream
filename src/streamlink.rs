@@ -449,6 +449,12 @@ fn streamlink(mut args: StreamlinkArgs) -> Result<(), Error> {
         "User-Agent=User-Agent=Mozilla/5.0 (Windows NT 10.0; \
          Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko \
          Chrome/59.0.3071.115 Safari/537.36",
+        "--retry-streams",
+        "1",
+        "--retry-open",
+        "3",
+        "--stream-types",
+        "hls",
     ];
 
     if args.restart {
