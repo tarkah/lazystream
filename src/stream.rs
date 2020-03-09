@@ -390,7 +390,7 @@ impl Stream {
         if self.quality_link.is_none() {
             if self.master_m3u8.is_none() {
                 if let Ok(master_link) = self.master_link(cdn).await {
-                    match get_m3u8(&master_link).await {
+                    match get_master_m3u8(&master_link).await {
                         Err(e) => {
                             self.quality_link = Some(None);
                             bail!(e);
@@ -454,7 +454,7 @@ async fn get_master_link(url: &str) -> Result<String, Error> {
     Ok(body_text)
 }
 
-pub async fn get_m3u8(url: &str) -> Result<String, Error> {
+async fn get_master_m3u8(url: &str) -> Result<String, Error> {
     let uri = url.parse::<http::Uri>().context("Failed to build URI")?;
     let request = http::Request::builder()
         .method("GET")
@@ -510,32 +510,4 @@ fn get_quality_link(
     }
 
     bail!("No stream found matching quality specified");
-}
-
-pub async fn get_segment_key_uri(master_link: &str, master_m3u8: &str) -> Result<http::Uri, Error> {
-    // Get first .m3u8 stream match, we will extract the segment key from this file
-    let stream_regex = regex::Regex::new(r"(?m)^.*\.m3u8$").unwrap();
-    let stream_match = stream_regex.find(master_m3u8);
-
-    if let Some(_match) = stream_match {
-        let master_link_parts = master_link.rsplitn(2, '/').collect::<Vec<&str>>();
-        if master_link_parts.len() == 2 {
-            let stream_link = format!("{}/{}", master_link_parts[1], _match.as_str());
-
-            let stream_m3u8 = get_m3u8(&stream_link).await?;
-
-            // segment key url should be the only valid url in the file, get first match
-            let key_regex = regex::Regex::new(r"(http|ftp|https)://([\w_-]+(?:(?:\.[\w_-]+)+))([\w.,@?^=%&:/~+#-]*[\w@?^=%&/~+#-])?").unwrap();
-            let key_match = key_regex.find(&stream_m3u8);
-
-            if let Some(_match) = key_match {
-                let uri = http::Uri::from_str(_match.as_str())
-                    .context("Could not get segment key uri")?;
-
-                return Ok(uri);
-            }
-        }
-    }
-
-    bail!("Could not get segment key uri");
 }
