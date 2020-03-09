@@ -437,10 +437,8 @@ fn streamlink(mut args: StreamlinkArgs) -> Result<(), Error> {
 
     let mut player_cmd = if cfg!(target_os = "windows") {
         "vlc.exe"
-    } else if let StreamlinkCommand::Play { .. } = args.command {
-        "vlc"
     } else {
-        "cvlc"
+        "vlc"
     };
 
     let hls_link = if args.quality == Some(Quality::_720p60) || args.quality == None {
@@ -592,21 +590,12 @@ fn streamlink(mut args: StreamlinkArgs) -> Result<(), Error> {
             cast_host,
             audio_source,
         } => {
-            _arg = if cfg!(target_os = "windows") {
-                format!(
-                    "{} -I dummy --sout \"#chromecast\" \
+            _arg = format!(
+                "{} -I dummy --sout \"#chromecast\" \
                      --sout-chromecast-ip={} \
                      --demux-filter=demux_chromecast",
-                    player_cmd, cast_host,
-                )
-            } else {
-                format!(
-                    "{} --sout \"#chromecast\" \
-                     --sout-chromecast-ip={} \
-                     --demux-filter=demux_chromecast",
-                    player_cmd, cast_host,
-                )
-            };
+                player_cmd, cast_host,
+            );
 
             if let Some(source) = audio_source {
                 command_args.push("--hls-audio-select");
@@ -662,7 +651,7 @@ fn check_streamlink() -> Result<(), Error> {
 
 fn check_vlc() -> Result<(), Error> {
     if !cfg!(target_os = "windows") {
-        let cmd = "cvlc";
+        let cmd = "vlc";
 
         let output = std::process::Command::new(cmd).arg("--version").output()?;
         let std_out = String::from_utf8(output.stdout)?;
