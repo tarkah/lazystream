@@ -4,6 +4,7 @@
 
   - [Overview](#overview)
   - [Shell Completions](#shell-completions)
+  - [xTeVe Setup for Plex / Emby](#xteve-setup-for-plex--emby)
 
 ## Overview
 Easily get LazyMan stream links, output directly or to m3u / xmltv formats. Streams can also be recorded or casted.
@@ -90,3 +91,7 @@ Shell completions can be generated for Bash, Fish and Zsh. Target shell and targ
 ```
 lazystream completions bash ~/.local/share/bash-completion/completions/
 ```
+
+## xTeVe Setup for Plex / Emby
+
+A docker container has been created by [@taylorbourne](https://github.com/taylorbourne) / [xteve_lazystream](https://github.com/taylorbourne/xteve_lazystream) that automatically sets up xTeVe with this program to generate daily updated xmltv playlists that can be setup with Emby / Plex Live TV.
