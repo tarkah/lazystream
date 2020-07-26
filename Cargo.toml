@@ -5,7 +5,7 @@ authors = ["tarkah <admin@tarkah.dev>"]
 edition = "2018"
 
 [dependencies]
-stats-api = { git = "https://github.com/tarkah/stats-api", rev = "1d8f53d940a5cee741a8e5b744ec4e5573b835fb" }
+stats-api = { git = "https://github.com/tarkah/stats-api", rev = "6c62f386c16eb06db7562954f3890e1b7713cf74" }
 
 failure = "0.1"
 chrono = "0.4"
