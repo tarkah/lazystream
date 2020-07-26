@@ -8,6 +8,7 @@ pub struct Team {
     pub name: String,
     pub link: String,
     pub abbreviation: String,
+    #[serde(default)]
     pub team_name: String,
     pub location_name: Option<String>,
     pub first_year_of_play: Option<String>,
