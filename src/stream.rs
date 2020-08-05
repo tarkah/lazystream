@@ -12,7 +12,7 @@ use chrono::{DateTime, Local, NaiveDate, Utc};
 use failure::{bail, format_err, Error, ResultExt};
 use futures::{future, AsyncReadExt};
 use http_client::{native::NativeClient, Body, HttpClient};
-use std::{collections::HashMap, str::FromStr};
+use std::{collections::BTreeMap, str::FromStr};
 
 pub struct LazyStream {
     pub opts: Opt,
@@ -55,6 +55,7 @@ impl LazyStream {
             );
             games.push(game);
         }
+        games.sort_by_key(|game| (game.game_date, game.away_team.name.clone()));
 
         Ok(LazyStream {
             opts: opts.clone(),
@@ -133,7 +134,7 @@ pub struct Game {
     pub game_pk: u64,
     pub game_date: DateTime<Utc>,
     pub selected_date: NaiveDate,
-    pub streams: Option<HashMap<FeedType, Stream>>,
+    pub streams: Option<BTreeMap<FeedType, Stream>>,
     pub home_team: Team,
     pub away_team: Team,
     pub game_content: Option<GameContentResponse>,
@@ -160,9 +161,9 @@ impl Game {
         }
     }
 
-    pub async fn streams(&mut self) -> Result<HashMap<FeedType, Stream>, Error> {
+    pub async fn streams(&mut self) -> Result<BTreeMap<FeedType, Stream>, Error> {
         if self.streams.is_none() {
-            let mut streams = HashMap::new();
+            let mut streams = BTreeMap::new();
             let game_content = self.game_content().await?;
 
             if let Some(epg) = game_content.media.epg {
