@@ -67,8 +67,8 @@ pub async fn process(opts: &Opt, need_return: bool) -> Result<(Game, Stream), Er
 
     println!("\nPick a stream...\n");
 
-    let mut feeds: Vec<FeedType> = streams.clone().into_iter().map(|(k, _)| k).collect();
-    feeds.sort();
+    let feeds: Vec<FeedType> = streams.clone().into_iter().map(|(k, _)| k).collect();
+
     for (idx, feed_type) in feeds.iter().enumerate() {
         println!("{}) {}", idx + 1, feed_type);
     }
