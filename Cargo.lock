@@ -593,7 +593,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "lazystream"
-version = "1.10.3"
+version = "1.10.4"
 dependencies = [
  "async-std 1.6.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "chrono 0.4.13 (registry+https://github.com/rust-lang/crates.io-index)",
