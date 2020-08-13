@@ -493,6 +493,7 @@ fn get_quality_link(
             || (quality != Quality::_720p60 && line.contains(&quality_check))
         {
             quality_idx = Some(idx + 1);
+            break;
         }
     }
 
