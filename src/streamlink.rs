@@ -42,7 +42,11 @@ async fn process(opts: Opt) -> Result<(), Error> {
         println!("Stream not available yet, will check again soon...");
         task::sleep(Duration::from_secs(60 * 30)).await;
     }
-    let link = stream.master_link(opts.cdn).await?;
+    let link = if let Some(quality) = quality {
+        stream.quality_link(opts.cdn, quality).await?
+    } else {
+        stream.master_link(opts.cdn).await?
+    };
 
     let args = StreamlinkArgs {
         link,
@@ -424,23 +428,15 @@ fn streamlink(mut args: StreamlinkArgs) -> Result<(), Error> {
         "vlc"
     };
 
-    let hls_link = if args.quality == Some(Quality::_720p60) || args.quality == None {
-        format!("hlsvariant://{} name_key=bitrate", args.link)
-    } else {
+    let hls_link = if args.quality.is_some() {
         format!("hlsvariant://{}", args.link)
-    };
-
-    let quality_str = if args.quality == Some(Quality::_720p60) {
-        "best"
-    } else if let Some(quality) = args.quality {
-        quality.to_streamlink_quality()
     } else {
-        "best"
+        format!("hlsvariant://{} name_key=bitrate", args.link)
     };
 
     let mut command_args = vec![
         hls_link.as_str(),
-        quality_str,
+        "best",
         "--force",
         "--http-no-ssl-verify",
         "--hls-segment-threads",
