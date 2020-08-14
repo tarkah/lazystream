@@ -416,9 +416,9 @@ impl Quality {
 
 #[derive(Debug, Clone, Copy, PartialEq, Hash, Eq, PartialOrd, Ord)]
 pub enum FeedType {
+    National,
     Home,
     Away,
-    National,
     French,
     Composite,
 }
