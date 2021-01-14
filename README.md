@@ -2,9 +2,16 @@
 [![Build Status](https://dev.azure.com/tarkah/lazystream/_apis/build/status/tarkah.lazystream?branchName=master)](https://dev.azure.com/tarkah/lazystream/_build/latest?definitionId=11&branchName=master)
 
 
+  - [Download](#download)
   - [Overview](#overview)
   - [Shell Completions](#shell-completions)
   - [xTeVe Setup for Plex / Emby](#xteve-setup-for-plex--emby)
+
+## Download
+The latest release for each platform can be downloaded from the following link.
+Just extract the archive and run from the `lazystream` executabe.
+
+[https://github.com/tarkah/lazystream/releases/latest](https://github.com/tarkah/lazystream/releases/latest)
 
 ## Overview
 Easily get LazyMan stream links, output directly or to m3u / xmltv formats. Streams can also be recorded or casted.
