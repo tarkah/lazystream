@@ -1,6 +1,6 @@
 [package]
 name = "lazystream"
-version = "1.10.5"
+version = "1.10.6"
 authors = ["tarkah <admin@tarkah.dev>"]
 edition = "2018"
 
