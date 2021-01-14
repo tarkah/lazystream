@@ -9,8 +9,8 @@ use chrono::Local;
 use failure::Error;
 use std::path::PathBuf;
 
-const NHL_ICON: &str = "http://home.windstream.net/dgrodecki/images/nhl/nhl_logo2.jpg";
-const MLB_ICON: &str = "http://home.windstream.net/dgrodecki/images/mlb/mlb_logo1.jpg";
+const NHL_ICON: &str = "https://upload.wikimedia.org/wikipedia/en/thumb/3/3a/05_NHL_Shield.svg/1200px-05_NHL_Shield.svg.png";
+const MLB_ICON: &str = "https://upload.wikimedia.org/wikipedia/en/thumb/a/a6/Major_League_Baseball_logo.svg/1200px-Major_League_Baseball_logo.svg.png";
 
 pub fn run(opts: Opt) {
     task::block_on(async {
