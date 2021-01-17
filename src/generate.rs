@@ -5,7 +5,7 @@ use crate::{
     VERSION,
 };
 use async_std::{fs, process, task};
-use chrono::Local;
+use chrono::{Local, Duration};
 use failure::Error;
 use std::path::PathBuf;
 
@@ -204,33 +204,33 @@ async fn create_xmltv(
             String::from("\n      <icon src=\"\"></icon>")
         };
 
-        let description = game.description().await.unwrap_or_else(|| String::from(""));
+        let mut description = game.description().await.unwrap_or_else(|| String::from(""));
+        if description.is_empty() {
+            description = format!("Watch the {} take on the {}.",
+                                  game.away_team.team_name, game.home_team.team_name);
+        }
 
         for (_, stream) in game.streams.as_mut().unwrap().iter_mut() {
             let start = game.game_date.with_timezone(&Local);
-            let stop = Local::now();
+            let stop = start + Duration::hours(4);
             let title = format!(
-                "{} {} {} @ {}",
-                game.game_date
-                    .with_timezone(&Local)
-                    .time()
-                    .format("%-I:%M %p")
-                    .to_string(),
-                stream.feed_type,
+                "{} @ {} ({})",
                 game.away_team.team_name,
                 game.home_team.team_name,
+                stream.feed_type
             );
 
             let record = format!(
-                "\n    <programme channel=\"{}\" start=\"{} {}\" stop=\"{}235959 {}\">\
+                "\n    <programme channel=\"{}\" start=\"{} {}\" stop=\"{} {}\">\
                      \n      <title lang=\"en\">{}</title>\
                      \n      <desc lang=\"en\">{}</desc>\
+                     \n      <category lang=\"en\">Sports</category>\
                      {}\
                      \n    </programme>",
                 start_channel + id,
                 start.format("%Y%m%d%H%M%S"),
                 start.format("%z"),
-                stop.format("%Y%m%d"),
+                stop.format("%Y%m%d%H%M%S"),
                 stop.format("%z"),
                 title,
                 description,
