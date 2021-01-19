@@ -5,7 +5,7 @@ use crate::{
     VERSION,
 };
 use async_std::{fs, process, task};
-use chrono::{Local, Duration};
+use chrono::{Duration, Local};
 use failure::Error;
 use std::path::PathBuf;
 
@@ -90,10 +90,14 @@ async fn create_playlist(
     let mut id: u32 = 0;
     for game in games.iter_mut() {
         for (_, stream) in game.streams.as_mut().unwrap().iter_mut() {
+            let master_link = stream.master_link(cdn).await;
+
             let link = if let Some(quality) = quality {
-                stream.quality_link(cdn, quality).await
+                let quality_link = stream.quality_link(cdn, quality).await;
+
+                quality_link.or(master_link)
             } else {
-                stream.master_link(cdn).await
+                master_link
             };
 
             let title = if is_xmltv {
@@ -206,8 +210,10 @@ async fn create_xmltv(
 
         let mut description = game.description().await.unwrap_or_else(|| String::from(""));
         if description.is_empty() {
-            description = format!("Watch the {} take on the {}.",
-                                  game.away_team.team_name, game.home_team.team_name);
+            description = format!(
+                "Watch the {} take on the {}.",
+                game.away_team.team_name, game.home_team.team_name
+            );
         }
 
         for (_, stream) in game.streams.as_mut().unwrap().iter_mut() {
@@ -215,9 +221,7 @@ async fn create_xmltv(
             let stop = start + Duration::hours(4);
             let title = format!(
                 "{} @ {} ({})",
-                game.away_team.team_name,
-                game.home_team.team_name,
-                stream.feed_type
+                game.away_team.team_name, game.home_team.team_name, stream.feed_type
             );
 
             let record = format!(

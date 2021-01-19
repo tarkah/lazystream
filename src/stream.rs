@@ -490,23 +490,32 @@ fn get_quality_link(
     master_m3u8: &str,
     quality: Quality,
 ) -> Result<String, Error> {
-    let quality_str: &str = quality.clone().into();
-    let quality_check = format!("x{}", quality_str);
+    let all_qualities = Quality::ALL;
 
-    let mut quality_idx = None;
+    let mut available_qualities = vec![];
+
     for (idx, line) in master_m3u8.lines().enumerate() {
-        if (quality == Quality::_720p60 && line.contains("FRAME-RATE"))
-            || (quality != Quality::_720p60 && line.contains(&quality_check))
-        {
-            quality_idx = Some(idx + 1);
-            break;
+        for quality in all_qualities.iter().cloned() {
+            let quality_str: &str = quality.into();
+            let quality_check = format!("x{}", quality_str);
+
+            if (quality == Quality::_720p60 && line.contains("FRAME-RATE"))
+                || (quality != Quality::_720p60
+                    && line.contains(&quality_check)
+                    && !line.contains("FRAME-RATE"))
+            {
+                available_qualities.push((quality, idx));
+                continue;
+            }
         }
     }
 
-    if let Some(idx) = quality_idx {
+    available_qualities.sort_by(|(a, _), (b, _)| a.cmp(b).reverse());
+
+    if let Some((_, idx)) = available_qualities.iter().find(|(q, _)| *q <= quality) {
         let quality_line = master_m3u8
             .lines()
-            .nth(idx)
+            .nth(*idx + 1)
             .ok_or_else(|| format_err!("No stream found matching quality specified"))?;
 
         let master_link_parts = master_link.rsplitn(2, '/').collect::<Vec<&str>>();

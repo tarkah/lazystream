@@ -345,16 +345,29 @@ impl std::fmt::Display for Cdn {
     }
 }
 
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Quality {
-    _720p60,
-    _720p,
-    _540p,
-    _504p,
-    _360p,
-    _288p,
-    _224p,
     _216p,
+    _224p,
+    _288p,
+    _360p,
+    _504p,
+    _540p,
+    _720p,
+    _720p60,
+}
+
+impl Quality {
+    pub const ALL: [Quality; 8] = [
+        Quality::_720p60,
+        Quality::_720p,
+        Quality::_540p,
+        Quality::_504p,
+        Quality::_360p,
+        Quality::_288p,
+        Quality::_224p,
+        Quality::_216p,
+    ];
 }
 
 impl From<Quality> for &str {
