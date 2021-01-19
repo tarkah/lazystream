@@ -1,7 +1,7 @@
 use crate::VERSION;
 use chrono::{format::ParseError, NaiveDate};
 use failure::{bail, Error};
-use http::Uri;
+use isahc::http::Uri;
 use std::{path::PathBuf, str::FromStr};
 use structopt::{clap::AppSettings::DeriveDisplayOrder, StructOpt};
 

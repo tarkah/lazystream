@@ -6,7 +6,7 @@ use crate::{
 use async_std::{process, task};
 use chrono::Local;
 use failure::{bail, format_err, Error, ResultExt};
-use http::Uri;
+use isahc::http::Uri;
 use mdns::RecordKind;
 use read_input::prelude::*;
 use std::{

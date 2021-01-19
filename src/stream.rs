@@ -11,8 +11,16 @@ use crate::{
 use chrono::{DateTime, Local, NaiveDate, Utc};
 use failure::{bail, format_err, Error, ResultExt};
 use futures::{future, AsyncReadExt};
-use http_client::{native::NativeClient, Body, HttpClient};
+use isahc::{http, AsyncBody, HttpClient, Request};
+use once_cell::sync::Lazy;
 use std::{collections::BTreeMap, str::FromStr};
+
+static SHARED_CLIENT: Lazy<HttpClient> = Lazy::new(|| {
+    HttpClient::builder()
+        .max_connections_per_host(6)
+        .build()
+        .unwrap()
+});
 
 pub struct LazyStream {
     pub opts: Opt,
@@ -433,14 +441,13 @@ impl Stream {
 
 async fn get_master_link(url: &str) -> Result<String, Error> {
     let uri = url.parse::<http::Uri>().context("Failed to build URI")?;
-    let request = http::Request::builder()
+    let request = Request::builder()
         .method("GET")
         .uri(uri)
-        .body(Body::empty())
+        .body(AsyncBody::empty())
         .unwrap();
 
-    let client = NativeClient::default();
-    let resp = client.send(request).await?;
+    let resp = SHARED_CLIENT.send_async(request).await?;
 
     let mut body = resp.into_body();
     let mut body_text = String::new();
@@ -457,14 +464,13 @@ async fn get_master_link(url: &str) -> Result<String, Error> {
 
 async fn get_master_m3u8(url: &str) -> Result<String, Error> {
     let uri = url.parse::<http::Uri>().context("Failed to build URI")?;
-    let request = http::Request::builder()
+    let request = Request::builder()
         .method("GET")
         .uri(uri)
-        .body(Body::empty())
+        .body(AsyncBody::empty())
         .unwrap();
 
-    let client = NativeClient::default();
-    let resp = client.send(request).await?;
+    let resp = SHARED_CLIENT.send_async(request).await?;
 
     let mut body = resp.into_body();
     let mut body_text = String::new();
