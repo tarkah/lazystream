@@ -281,6 +281,9 @@ pub enum GenerateCommand {
         #[structopt(name = "FILE", parse(from_os_str))]
         /// File path to save .m3u output
         file: PathBuf,
+        #[structopt(long, parse(try_from_str), possible_values(&["HOME", "AWAY", "FRENCH", "COMPOSITE", "NATIONAL"]))]
+        /// Feed types to exclude from output
+        exclude_feeds: Vec<FeedType>,
     },
     #[structopt(usage = "lazystream generate xmltv <FILE> [--start-channel INT] [OPTIONS]")]
     /// Generate a .xml XMLTV file for all games with corresponding .m3u playlist file
@@ -294,6 +297,9 @@ pub enum GenerateCommand {
         #[structopt(long, default_value = "Lazyman")]
         /// Specify the channel name prefix
         channel_prefix: String,
+        #[structopt(long, parse(try_from_str), possible_values(&["HOME", "AWAY", "FRENCH", "COMPOSITE", "NATIONAL"]))]
+        /// Feed types to exclude from output
+        exclude_feeds: Vec<FeedType>,
     },
 }
 

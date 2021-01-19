@@ -1,6 +1,6 @@
 use crate::{
     log_error,
-    opt::{Cdn, Command, GenerateCommand, Opt, Quality, Sport},
+    opt::{Cdn, Command, FeedType, GenerateCommand, Opt, Quality, Sport},
     stream::{Game, LazyStream},
     VERSION,
 };
@@ -49,6 +49,7 @@ async fn process(opts: Opt) -> Result<(), Error> {
                 file,
                 start_channel,
                 channel_prefix,
+                exclude_feeds,
             } => {
                 let path = file.with_extension("m3u");
                 create_playlist(
@@ -59,15 +60,37 @@ async fn process(opts: Opt) -> Result<(), Error> {
                     true,
                     start_channel,
                     Some(&channel_prefix),
+                    &exclude_feeds,
                 )
                 .await?;
 
                 let path = path.with_extension("xml");
-                create_xmltv(path, games, start_channel, opts.sport, &channel_prefix).await?;
+                create_xmltv(
+                    path,
+                    games,
+                    start_channel,
+                    opts.sport,
+                    &channel_prefix,
+                    &exclude_feeds,
+                )
+                .await?;
             }
-            GenerateCommand::Playlist { file } => {
+            GenerateCommand::Playlist {
+                file,
+                exclude_feeds,
+            } => {
                 let path = file.with_extension("m3u");
-                create_playlist(path, games, opts.cdn, opts.quality, false, 1000, None).await?;
+                create_playlist(
+                    path,
+                    games,
+                    opts.cdn,
+                    opts.quality,
+                    false,
+                    1000,
+                    None,
+                    &exclude_feeds,
+                )
+                .await?;
             }
         }
     }
@@ -75,6 +98,7 @@ async fn process(opts: Opt) -> Result<(), Error> {
     Ok(())
 }
 
+#[allow(clippy::clippy::too_many_arguments)]
 async fn create_playlist(
     path: PathBuf,
     mut games: Vec<Game>,
@@ -83,13 +107,20 @@ async fn create_playlist(
     is_xmltv: bool,
     start_channel: u32,
     channel_prefix: Option<&str>,
+    exclude_feeds: &[FeedType],
 ) -> Result<(), Error> {
     let mut m3u = String::new();
     m3u.push_str("#EXTM3U\n");
 
     let mut id: u32 = 0;
     for game in games.iter_mut() {
-        for (_, stream) in game.streams.as_mut().unwrap().iter_mut() {
+        for (_, stream) in game
+            .streams
+            .as_mut()
+            .unwrap()
+            .iter_mut()
+            .filter(|(feed_type, _)| !exclude_feeds.contains(&feed_type))
+        {
             let master_link = stream.master_link(cdn).await;
 
             let link = if let Some(quality) = quality {
@@ -160,6 +191,7 @@ async fn create_xmltv(
     start_channel: u32,
     sport: Sport,
     channel_prefix: &str,
+    exclude_feeds: &[FeedType],
 ) -> Result<(), Error> {
     let mut xmltv = String::new();
     xmltv.push_str(&format!(
@@ -216,7 +248,13 @@ async fn create_xmltv(
             );
         }
 
-        for (_, stream) in game.streams.as_mut().unwrap().iter_mut() {
+        for (_, stream) in game
+            .streams
+            .as_mut()
+            .unwrap()
+            .iter_mut()
+            .filter(|(feed_type, _)| !exclude_feeds.contains(&feed_type))
+        {
             let start = game.game_date.with_timezone(&Local);
             let stop = start + Duration::hours(4);
             let title = format!(
