@@ -8,7 +8,7 @@ use crate::{
     opt::{Cdn, FeedType, Opt, Quality, Sport},
     HOST,
 };
-use chrono::{DateTime, Local, NaiveDate, Utc};
+use chrono::{DateTime, NaiveDate, Utc};
 use failure::{bail, format_err, Error, ResultExt};
 use futures::{future, AsyncReadExt};
 use isahc::{http, AsyncBody, HttpClient, Request};
@@ -26,18 +26,21 @@ pub struct LazyStream {
     pub opts: Opt,
     games: Vec<Game>,
     teams: Vec<Team>,
+    schedule_date: NaiveDate,
 }
 
 impl LazyStream {
     pub async fn new(opts: &Opt) -> Result<Self, Error> {
-        let date = if opts.date.is_some() {
-            opts.date.clone().unwrap()
+        let client = Client::new(opts.sport);
+
+        let schedule = if let Some(date) = opts.date {
+            client.get_schedule_for(date).await?
         } else {
-            Local::today().naive_local()
+            client.get_todays_schedule().await?
         };
 
-        let client = Client::new(opts.sport);
-        let schedule = client.get_schedule_for(date).await?;
+        let date = schedule.date;
+
         let teams = client.get_teams().await?;
 
         let mut games = vec![];
@@ -69,15 +72,12 @@ impl LazyStream {
             opts: opts.clone(),
             games,
             teams,
+            schedule_date: date,
         })
     }
 
     pub fn date(&self) -> NaiveDate {
-        if self.opts.date.is_some() {
-            self.opts.date.clone().unwrap()
-        } else {
-            Local::today().naive_local()
-        }
+        self.schedule_date
     }
 
     pub fn games(&self) -> Vec<Game> {

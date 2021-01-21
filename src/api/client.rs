@@ -17,6 +17,22 @@ impl Client {
         Client { mlb, nhl, sport }
     }
 
+    pub async fn get_todays_schedule(&self) -> Result<Schedule, Error> {
+        let serialized = match &self.sport {
+            Sport::Mlb => {
+                let schedule = self.mlb.get_todays_schedule().await?;
+                serde_json::to_vec(&schedule)?
+            }
+            Sport::Nhl => {
+                let schedule = self.nhl.get_todays_schedule().await?;
+                serde_json::to_vec(&schedule)?
+            }
+        };
+
+        let schedule = serde_json::from_slice(&serialized)?;
+        Ok(schedule)
+    }
+
     pub async fn get_schedule_for(&self, date: chrono::NaiveDate) -> Result<Schedule, Error> {
         let serialized = match &self.sport {
             Sport::Mlb => {
