@@ -50,6 +50,7 @@ async fn process(opts: Opt) -> Result<(), Error> {
                 start_channel,
                 channel_prefix,
                 exclude_feeds,
+                start_prepend,
             } => {
                 let path = file.with_extension("m3u");
                 create_playlist(
@@ -72,6 +73,7 @@ async fn process(opts: Opt) -> Result<(), Error> {
                     opts.sport,
                     &channel_prefix,
                     &exclude_feeds,
+                    start_prepend,
                 )
                 .await?;
             }
@@ -192,6 +194,7 @@ async fn create_xmltv(
     sport: Sport,
     channel_prefix: &str,
     exclude_feeds: &[FeedType],
+    start_prepend: u16,
 ) -> Result<(), Error> {
     let mut xmltv = String::new();
     xmltv.push_str(&format!(
@@ -255,8 +258,10 @@ async fn create_xmltv(
             .iter_mut()
             .filter(|(feed_type, _)| !exclude_feeds.contains(&feed_type))
         {
-            let start = game.game_date.with_timezone(&Local);
-            let stop = start + Duration::hours(4);
+            let game_time = game.game_date.with_timezone(&Local);
+            let start = game_time - Duration::minutes(start_prepend as i64);
+            let stop = game_time + Duration::hours(4);
+
             let title = format!(
                 "{} @ {} ({})",
                 game.away_team.team_name, game.home_team.team_name, stream.feed_type

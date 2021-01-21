@@ -300,6 +300,9 @@ pub enum GenerateCommand {
         #[structopt(long, parse(try_from_str), possible_values(&["HOME", "AWAY", "FRENCH", "COMPOSITE", "NATIONAL"]))]
         /// Feed types to exclude from output
         exclude_feeds: Vec<FeedType>,
+        #[structopt(long, default_value = "0", value_name = "minutes")]
+        /// Number of minutes to prepend to the start time of the stream
+        start_prepend: u16,
     },
 }
 
