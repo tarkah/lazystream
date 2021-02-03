@@ -39,6 +39,10 @@ async fn process(opts: Opt) -> Result<(), Error> {
 
     println!();
     while stream.master_link(opts.cdn).await.is_err() {
+        if opts.disable_retry {
+            bail!("Stream not available yet");
+        }
+
         println!("Stream not available yet, will check again soon...");
         task::sleep(Duration::from_secs(60 * 30)).await;
     }

@@ -41,6 +41,10 @@ pub struct Opt {
     #[structopt(long, parse(try_from_str), global = true, possible_values(&["720p60","720p","540p","504p","360p","288p","224p","216p"]))]
     /// Specify a quality to use, otherwise stream will be adaptive
     pub quality: Option<Quality>,
+    #[structopt(long, global = true)]
+    /// Disables unavailable stream retry for `play`, `record`, and `cast` commands.
+    /// Program will exit instead.
+    pub disable_retry: bool,
 }
 
 #[derive(StructOpt, Debug, PartialEq, Clone)]
