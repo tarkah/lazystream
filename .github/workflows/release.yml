@@ -61,7 +61,7 @@ jobs:
 
       - name: Install Musl Tools
         run: sudo apt install -y musl-tools
-        if: ${{ matrix.target.target }} == "x86_64-unknown-linux-musl"
+        if: matrix.target.target == 'x86_64-unknown-linux-musl'
 
       - name: Get the version
         id: get_version
