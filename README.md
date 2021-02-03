@@ -36,11 +36,13 @@ tarkah <admin@tarkah.dev>
 Easily get LazyMan stream links, output directly or to m3u / xmltv formats. Streams can also be recorded or casted.
 
 USAGE:
-    lazystream [OPTIONS] <SUBCOMMAND>
+    lazystream [FLAGS] [OPTIONS] <SUBCOMMAND>
 
 FLAGS:
-    -h, --help       Prints help information
-    -V, --version    Prints version information
+        --disable-retry    Disables unavailable stream retry for `play`, `record`, and `cast` commands. Program will
+                           exit instead
+    -h, --help             Prints help information
+    -V, --version          Prints version information
 
 OPTIONS:
         --sport <sport>        Specify which sport to get streams for [default: nhl]  [possible values: mlb, nhl]
