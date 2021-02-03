@@ -1,5 +1,5 @@
 # LazyStream
-[![Build Status](https://dev.azure.com/tarkah/lazystream/_apis/build/status/tarkah.lazystream?branchName=master)](https://dev.azure.com/tarkah/lazystream/_build/latest?definitionId=11&branchName=master)
+![Test](https://github.com/tarkah/lazystream/workflows/Test/badge.svg)
 
 
   - [Download](#download)
