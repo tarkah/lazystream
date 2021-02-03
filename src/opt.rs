@@ -42,8 +42,7 @@ pub struct Opt {
     /// Specify a quality to use, otherwise stream will be adaptive
     pub quality: Option<Quality>,
     #[structopt(long, global = true)]
-    /// Disables unavailable stream retry for `play`, `record`, and `cast` commands.
-    /// Program will exit instead.
+    /// Disables unavailable stream retry for `play`, `record`, and `cast` commands. Program will exit instead.
     pub disable_retry: bool,
 }
 
