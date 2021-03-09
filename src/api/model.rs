@@ -160,6 +160,8 @@ pub struct GameContentArticleMediaImageCutDetail {
     pub src: String,
 }
 
+#[allow(clippy::unknown_clippy_lints)]
+#[allow(clippy::unnecessary_wraps)]
 fn fail_as_none<'de, D, T>(de: D) -> Result<Option<T>, D::Error>
 where
     D: serde::Deserializer<'de>,
