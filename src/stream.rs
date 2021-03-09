@@ -88,7 +88,7 @@ impl LazyStream {
         if self
             .teams
             .iter()
-            .any(|team| team.abbreviation == team_abbrev)
+            .any(|team| team.abbreviation.as_deref() == Some(team_abbrev))
         {
             Ok(())
         } else {
@@ -98,7 +98,8 @@ impl LazyStream {
 
     pub fn game_with_team_abbrev(&self, team_abbrev: &str) -> Option<Game> {
         let game_idx = self.games.iter().position(|game| {
-            game.home_team.abbreviation == team_abbrev || game.away_team.abbreviation == team_abbrev
+            game.home_team.abbreviation.as_deref() == Some(team_abbrev)
+                || game.away_team.abbreviation.as_deref() == Some(team_abbrev)
         });
         if let Some(index) = game_idx {
             Some(self.games[index].clone())
@@ -265,7 +266,7 @@ impl Game {
 
         let mut feed_type: FeedType = if let Some(feed_type) = feed_type {
             feed_type
-        } else if self.home_team.abbreviation == team_abbrev {
+        } else if self.home_team.abbreviation.as_deref() == Some(team_abbrev) {
             FeedType::Home
         } else {
             FeedType::Away
