@@ -7,7 +7,7 @@ pub struct Team {
     pub id: u32,
     pub name: String,
     pub link: String,
-    pub abbreviation: String,
+    pub abbreviation: Option<String>,
     #[serde(default)]
     pub team_name: String,
     pub location_name: Option<String>,
@@ -160,6 +160,8 @@ pub struct GameContentArticleMediaImageCutDetail {
     pub src: String,
 }
 
+#[allow(clippy::unknown_clippy_lints)]
+#[allow(clippy::unnecessary_wraps)]
 fn fail_as_none<'de, D, T>(de: D) -> Result<Option<T>, D::Error>
 where
     D: serde::Deserializer<'de>,

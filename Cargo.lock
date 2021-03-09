@@ -1279,7 +1279,7 @@ dependencies = [
 [[package]]
 name = "stats-api"
 version = "0.1.0"
-source = "git+https://github.com/tarkah/stats-api?rev=d1834a7cb76da175b6d8f7505ef239f1eff0203e#d1834a7cb76da175b6d8f7505ef239f1eff0203e"
+source = "git+https://github.com/tarkah/stats-api?rev=9f6948dc786b66251a8bd9ad28d7277ac41af413#9f6948dc786b66251a8bd9ad28d7277ac41af413"
 dependencies = [
  "chrono",
  "failure",
