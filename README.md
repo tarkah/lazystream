@@ -9,7 +9,7 @@
 
 ## Download
 The latest release for each platform can be downloaded from the following link.
-Just extract the archive and run from the `lazystream` executabe.
+Just extract the archive and run from the `lazystream` executable.
 
 [https://github.com/tarkah/lazystream/releases/latest](https://github.com/tarkah/lazystream/releases/latest)
 
