@@ -500,10 +500,10 @@ fn get_quality_link(
             let quality_str: &str = quality.into();
             let quality_check = format!("x{}", quality_str);
 
-            if (quality == Quality::_720p60 && line.contains("FRAME-RATE"))
+            if (quality == Quality::_720p60 && line.contains("FRAME-RATE=59.94"))
                 || (quality != Quality::_720p60
                     && line.contains(&quality_check)
-                    && !line.contains("FRAME-RATE"))
+                    && !line.contains("FRAME-RATE=59.94"))
             {
                 available_qualities.push((quality, idx));
                 continue;
