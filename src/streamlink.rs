@@ -16,7 +16,7 @@ use std::{
 pub fn run(opts: Opt) {
     task::block_on(async {
         if let Err(e) = process(opts).await {
-            log_error(&e);
+            log_error(e.as_fail());
             process::exit(1);
         };
     });

@@ -15,7 +15,7 @@ const MLB_ICON: &str = "https://upload.wikimedia.org/wikipedia/en/thumb/a/a6/Maj
 pub fn run(opts: Opt) {
     task::block_on(async {
         if let Err(e) = process(opts).await {
-            log_error(&e);
+            log_error(e.as_fail());
             process::exit(1);
         };
     });

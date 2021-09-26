@@ -12,7 +12,7 @@ use read_input::prelude::*;
 pub fn run(opts: Opt) {
     task::block_on(async {
         if let Err(e) = process(&opts, false).await {
-            log_error(&e);
+            log_error(e.as_fail());
             process::exit(1);
         };
     });

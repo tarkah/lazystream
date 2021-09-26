@@ -290,7 +290,12 @@ impl Game {
     }
 
     async fn resolve_streams(&mut self) {
-        let _ = self.streams().await;
+        if let Err(e) = self.streams().await.context(format!(
+            "Failed to resolve stream for game {}",
+            self.game_pk
+        )) {
+            crate::log_error(&e);
+        }
     }
 
     #[allow(clippy::drop_ref)]
