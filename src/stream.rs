@@ -81,11 +81,7 @@ impl LazyStream {
     }
 
     pub fn games(&self) -> Vec<Game> {
-        self.games
-            .clone()
-            .into_iter()
-            .filter(|game| game.streams.is_some())
-            .collect()
+        self.games.clone()
     }
 
     pub fn check_team_abbrev(&self, team_abbrev: &str) -> Result<(), Error> {

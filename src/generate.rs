@@ -41,7 +41,11 @@ async fn process(opts: Opt) -> Result<(), Error> {
         lazy_stream.resolve_with_master_link(opts.cdn).await;
     }
 
-    let games = lazy_stream.games();
+    let games = lazy_stream
+        .games()
+        .into_iter()
+        .filter(|game| game.streams.is_some())
+        .collect::<Vec<_>>();
 
     if let Command::Generate { command } = opts.command {
         match command {
