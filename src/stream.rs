@@ -101,11 +101,8 @@ impl LazyStream {
             game.home_team.abbreviation.as_deref() == Some(team_abbrev)
                 || game.away_team.abbreviation.as_deref() == Some(team_abbrev)
         });
-        if let Some(index) = game_idx {
-            Some(self.games[index].clone())
-        } else {
-            None
-        }
+
+        game_idx.map(|idx| self.games[idx].clone())
     }
 
     #[allow(clippy::drop_ref)]
@@ -289,14 +286,21 @@ impl Game {
         }
     }
 
-    async fn resolve_streams(&mut self) {
-        let _ = self.streams().await;
+    async fn resolve_streams(&mut self) -> Result<(), Error> {
+        self.streams().await.map(|_| ())
     }
 
     #[allow(clippy::drop_ref)]
     async fn resolve_streams_master_link(&mut self, cdn: Cdn) {
         if self.streams.is_none() {
-            self.resolve_streams().await;
+            if let Err(e) = self.resolve_streams().await {
+                crate::log_error(&e.context(format!(
+                    "Failed to resolve stream for game {}",
+                    self.game_pk
+                )));
+
+                return;
+            }
         }
 
         let tasks: Vec<_> = self
@@ -316,7 +320,14 @@ impl Game {
     #[allow(clippy::drop_ref)]
     async fn resolve_streams_quality_link(&mut self, cdn: Cdn, quality: Quality) {
         if self.streams.is_none() {
-            self.resolve_streams().await;
+            if let Err(e) = self.resolve_streams().await {
+                crate::log_error(&e.context(format!(
+                    "Failed to resolve stream for game {}",
+                    self.game_pk
+                )));
+
+                return;
+            }
         }
         let tasks: Vec<_> = self
             .streams

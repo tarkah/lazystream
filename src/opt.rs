@@ -352,7 +352,7 @@ impl FromStr for Cdn {
 
 impl std::fmt::Display for Cdn {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let s: &str = self.clone().into();
+        let s: &str = (*self).into();
         write!(f, "{}", s)
     }
 }
@@ -419,7 +419,7 @@ impl FromStr for Quality {
 
 impl std::fmt::Display for Quality {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let s: &str = self.clone().into();
+        let s: &str = (*self).into();
         write!(f, "{}", s)
     }
 }
@@ -477,7 +477,7 @@ impl FromStr for FeedType {
 
 impl std::fmt::Display for FeedType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let s: &str = self.clone().into();
+        let s: &str = (*self).into();
         write!(f, "{}", s)
     }
 }
@@ -519,7 +519,7 @@ impl FromStr for Sport {
 
 impl std::fmt::Display for Sport {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let s: &str = self.clone().into();
+        let s: &str = (*self).into();
         write!(f, "{}", s)
     }
 }

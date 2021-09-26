@@ -15,7 +15,7 @@ const MLB_ICON: &str = "https://upload.wikimedia.org/wikipedia/en/thumb/a/a6/Maj
 pub fn run(opts: Opt) {
     task::block_on(async {
         if let Err(e) = process(opts).await {
-            log_error(&e);
+            log_error(e.as_fail());
             process::exit(1);
         };
     });
@@ -41,7 +41,11 @@ async fn process(opts: Opt) -> Result<(), Error> {
         lazy_stream.resolve_with_master_link(opts.cdn).await;
     }
 
-    let games = lazy_stream.games();
+    let games = lazy_stream
+        .games()
+        .into_iter()
+        .filter(|game| game.streams.is_some())
+        .collect::<Vec<_>>();
 
     if let Command::Generate { command } = opts.command {
         match command {
@@ -100,7 +104,7 @@ async fn process(opts: Opt) -> Result<(), Error> {
     Ok(())
 }
 
-#[allow(clippy::clippy::too_many_arguments)]
+#[allow(clippy::too_many_arguments)]
 async fn create_playlist(
     path: PathBuf,
     mut games: Vec<Game>,
@@ -121,7 +125,7 @@ async fn create_playlist(
             .as_mut()
             .unwrap()
             .iter_mut()
-            .filter(|(feed_type, _)| !exclude_feeds.contains(&feed_type))
+            .filter(|(feed_type, _)| !exclude_feeds.contains(feed_type))
         {
             let master_link = stream.master_link(cdn).await;
 
@@ -256,7 +260,7 @@ async fn create_xmltv(
             .as_mut()
             .unwrap()
             .iter_mut()
-            .filter(|(feed_type, _)| !exclude_feeds.contains(&feed_type))
+            .filter(|(feed_type, _)| !exclude_feeds.contains(feed_type))
         {
             let game_time = game.game_date.with_timezone(&Local);
             let start = game_time - Duration::minutes(start_prepend as i64);

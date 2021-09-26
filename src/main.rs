@@ -1,6 +1,5 @@
 use crate::opt::OutputType;
 use colored::Colorize;
-use failure::Error;
 
 mod api;
 mod completions;
@@ -33,7 +32,7 @@ fn main() {
 }
 
 /// Log any errors and causes
-pub fn log_error(e: &Error) {
+pub fn log_error(e: &dyn failure::Fail) {
     let error_colored = "ERROR".red();
     eprintln!("\n{}: {}", error_colored, e);
     for cause in e.iter_causes() {
