@@ -105,11 +105,8 @@ impl LazyStream {
             game.home_team.abbreviation.as_deref() == Some(team_abbrev)
                 || game.away_team.abbreviation.as_deref() == Some(team_abbrev)
         });
-        if let Some(index) = game_idx {
-            Some(self.games[index].clone())
-        } else {
-            None
-        }
+
+        game_idx.map(|idx| self.games[idx].clone())
     }
 
     #[allow(clippy::drop_ref)]

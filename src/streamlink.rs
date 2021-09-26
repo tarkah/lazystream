@@ -10,7 +10,12 @@ use isahc::http::Uri;
 use mdns::RecordKind;
 use read_input::prelude::*;
 use std::{
-    collections::HashMap, io::Write, net::Ipv4Addr, path::PathBuf, process::Stdio, time::Duration,
+    collections::HashMap,
+    io::Write,
+    net::Ipv4Addr,
+    path::{Path, PathBuf},
+    process::Stdio,
+    time::Duration,
 };
 
 pub fn run(opts: Opt) {
@@ -112,10 +117,10 @@ async fn process_play(
             ..
         } => {
             let lazy_stream = LazyStream::new(opts).await?;
-            lazy_stream.check_team_abbrev(&team_abbrev)?;
+            lazy_stream.check_team_abbrev(team_abbrev)?;
             println!("Found matching team for {}", team_abbrev);
 
-            if let Some(mut game) = lazy_stream.game_with_team_abbrev(&team_abbrev) {
+            if let Some(mut game) = lazy_stream.game_with_team_abbrev(team_abbrev) {
                 println!("Game found for today");
 
                 let stream = game
@@ -163,7 +168,7 @@ async fn process_record(
             offset,
             ..
         } => {
-            check_output(&output)?;
+            check_output(output)?;
             let (game, stream) = crate::select::process(opts, true).await?;
 
             let streamlink_command = StreamlinkCommand::from(command);
@@ -186,13 +191,13 @@ async fn process_record(
             offset,
             ..
         } => {
-            check_output(&output)?;
+            check_output(output)?;
 
             let lazy_stream = LazyStream::new(opts).await?;
-            lazy_stream.check_team_abbrev(&team_abbrev)?;
+            lazy_stream.check_team_abbrev(team_abbrev)?;
             println!("Found matching team for {}", team_abbrev);
 
-            if let Some(mut game) = lazy_stream.game_with_team_abbrev(&team_abbrev) {
+            if let Some(mut game) = lazy_stream.game_with_team_abbrev(team_abbrev) {
                 println!("Game found for today");
 
                 let stream = game
@@ -278,10 +283,10 @@ async fn process_cast(
             ..
         } => {
             let lazy_stream = LazyStream::new(opts).await?;
-            lazy_stream.check_team_abbrev(&team_abbrev)?;
+            lazy_stream.check_team_abbrev(team_abbrev)?;
             println!("Found matching team for {}", team_abbrev);
 
-            if let Some(mut game) = lazy_stream.game_with_team_abbrev(&team_abbrev) {
+            if let Some(mut game) = lazy_stream.game_with_team_abbrev(team_abbrev) {
                 println!("Game found for today");
 
                 let stream = game
@@ -614,8 +619,8 @@ fn check_vlc() -> Result<(), Error> {
 }
 
 /// Make sure output directory exists and can be written to
-fn check_output(directory: &PathBuf) -> Result<(), Error> {
-    if !directory.is_dir() {
+fn check_output(directory: impl AsRef<Path>) -> Result<(), Error> {
+    if !directory.as_ref().is_dir() {
         bail!("Output diretory does not exist, please create it");
     }
 
