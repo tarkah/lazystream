@@ -306,6 +306,11 @@ pub enum GenerateCommand {
         #[structopt(long, default_value = "0", value_name = "minutes")]
         /// Number of minutes to prepend to the start time of the stream
         start_prepend: u16,
+        #[structopt(long)]
+        /// Only output the number of channels as there are streams
+        ///
+        /// Default is to output 100 fixed channels
+        trim: bool,
     },
 }
 

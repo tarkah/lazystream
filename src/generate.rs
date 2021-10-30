@@ -55,6 +55,7 @@ async fn process(opts: Opt) -> Result<(), Error> {
                 channel_prefix,
                 exclude_feeds,
                 start_prepend,
+                trim,
             } => {
                 let path = file.with_extension("m3u");
                 create_playlist(
@@ -66,6 +67,7 @@ async fn process(opts: Opt) -> Result<(), Error> {
                     start_channel,
                     Some(&channel_prefix),
                     &exclude_feeds,
+                    trim,
                 )
                 .await?;
 
@@ -78,6 +80,7 @@ async fn process(opts: Opt) -> Result<(), Error> {
                     &channel_prefix,
                     &exclude_feeds,
                     start_prepend,
+                    trim,
                 )
                 .await?;
             }
@@ -95,6 +98,7 @@ async fn process(opts: Opt) -> Result<(), Error> {
                     1000,
                     None,
                     &exclude_feeds,
+                    false,
                 )
                 .await?;
             }
@@ -114,6 +118,7 @@ async fn create_playlist(
     start_channel: u32,
     channel_prefix: Option<&str>,
     exclude_feeds: &[FeedType],
+    trim: bool,
 ) -> Result<(), Error> {
     let mut m3u = String::new();
     m3u.push_str("#EXTM3U\n");
@@ -167,7 +172,7 @@ async fn create_playlist(
     }
 
     // Create additional blank records for all 100 channels
-    if is_xmltv {
+    if is_xmltv && !trim {
         let _id = id;
         for _ in _id..100 {
             let title = format!("{} {}", channel_prefix.unwrap(), id + 1);
@@ -191,6 +196,7 @@ async fn create_playlist(
     Ok(())
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn create_xmltv(
     path: PathBuf,
     mut games: Vec<Game>,
@@ -199,6 +205,7 @@ async fn create_xmltv(
     channel_prefix: &str,
     exclude_feeds: &[FeedType],
     start_prepend: u16,
+    trim: bool,
 ) -> Result<(), Error> {
     let mut xmltv = String::new();
     xmltv.push_str(&format!(
@@ -214,8 +221,22 @@ async fn create_xmltv(
         Sport::Mlb => MLB_ICON,
     };
 
+    let num_streams = games
+        .iter()
+        .map(|game| {
+            game.streams
+                .as_ref()
+                .unwrap()
+                .keys()
+                .filter(|feed_type| !exclude_feeds.contains(feed_type))
+        })
+        .flatten()
+        .count();
+
+    let num_channels = trim.then(|| num_streams as u32).unwrap_or(100);
+
     let mut id: u32 = 0;
-    while id < 100 {
+    while id < num_channels {
         let record = format!(
             "\n    <channel id=\"{}\">\
              \n      <display-name>{} {}</display-name>\
