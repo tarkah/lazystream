@@ -10,7 +10,7 @@ mod stream;
 mod streamlink;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
-const HOST: &str = "http://freegamez.ga";
+const HOST: &str = "http://freesports.ddns.net";
 const BANNER: &str = r#"
  |        \   __  /\ \   / ___|__ __|  _ \  ____|    \     \  | 
  |       _ \     /  \   /\___ \   |   |   | __|     _ \   |\/ | 
