@@ -10,7 +10,6 @@ mod stream;
 mod streamlink;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
-const HOST: &str = "http://freesports.ddns.net";
 const BANNER: &str = r#"
  |        \   __  /\ \   / ___|__ __|  _ \  ____|    \     \  | 
  |       _ \     /  \   /\___ \   |   |   | __|     _ \   |\/ | 
@@ -28,6 +27,7 @@ fn main() {
         OutputType::Record(opts) => crate::streamlink::run(opts),
         OutputType::Cast(opts) => crate::streamlink::run(opts),
         OutputType::Completions(opts) => crate::completions::run(opts),
+        OutputType::Host(host) => println!("{}", host),
     }
 }
 

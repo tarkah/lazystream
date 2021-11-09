@@ -5,6 +5,8 @@ use isahc::http::Uri;
 use std::{path::PathBuf, str::FromStr};
 use structopt::{clap::AppSettings::DeriveDisplayOrder, StructOpt};
 
+const HOST: &str = "http://freesports.ddns.net";
+
 pub fn parse_opts() -> OutputType {
     let opts = Opt::from_args();
 
@@ -15,6 +17,7 @@ pub fn parse_opts() -> OutputType {
         Command::Record { .. } => OutputType::Record(opts),
         Command::Cast { .. } => OutputType::Cast(opts),
         Command::Completions { .. } => OutputType::Completions(opts),
+        Command::Host { .. } => OutputType::Host(opts.host),
     }
 }
 
@@ -44,6 +47,9 @@ pub struct Opt {
     #[structopt(long, global = true)]
     /// Disables unavailable stream retry for `play`, `record`, and `cast` commands. Program will exit instead.
     pub disable_retry: bool,
+    #[structopt(long, global = true, default_value = HOST)]
+    /// Specify a host
+    pub host: String,
 }
 
 #[derive(StructOpt, Debug, PartialEq, Clone)]
@@ -99,6 +105,9 @@ pub enum Command {
         /// Target directory to save completions
         target: PathBuf,
     },
+    #[structopt(usage = "lazystream host [OPTIONS]")]
+    /// Print the host used by 'lazystream'
+    Host,
 }
 
 #[derive(StructOpt, Debug, PartialEq, Clone)]
@@ -321,6 +330,7 @@ pub enum OutputType {
     Record(Opt),
     Cast(Opt),
     Completions(Opt),
+    Host(String),
 }
 
 fn parse_date(src: &str) -> Result<NaiveDate, ParseError> {
