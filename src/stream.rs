@@ -6,7 +6,6 @@ use crate::{
         },
     },
     opt::{Cdn, FeedType, Opt, Quality, Sport},
-    HOST,
 };
 use chrono::{DateTime, NaiveDate, Utc};
 use failure::{bail, format_err, Error, ResultExt};
@@ -58,6 +57,7 @@ impl LazyStream {
 
             let game = Game::new(
                 opts.sport,
+                opts.host.clone(),
                 game_pk,
                 game_date,
                 date,
@@ -137,6 +137,7 @@ impl LazyStream {
 #[derive(Clone)]
 pub struct Game {
     sport: Sport,
+    host: String,
     pub game_pk: u64,
     pub game_date: DateTime<Utc>,
     pub selected_date: NaiveDate,
@@ -149,6 +150,7 @@ pub struct Game {
 impl Game {
     fn new(
         sport: Sport,
+        host: String,
         game_pk: u64,
         game_date: DateTime<Utc>,
         selected_date: NaiveDate,
@@ -157,6 +159,7 @@ impl Game {
     ) -> Self {
         Game {
             sport,
+            host,
             game_pk,
             game_date,
             selected_date,
@@ -190,6 +193,7 @@ impl Game {
 
                                     let stream = Stream::new(
                                         id,
+                                        self.host.clone(),
                                         self.sport,
                                         feed_type,
                                         self.game_date,
@@ -348,6 +352,7 @@ impl Game {
 #[allow(clippy::option_option)]
 pub struct Stream {
     id: String,
+    host: String,
     sport: Sport,
     pub feed_type: FeedType,
     game_date: DateTime<Utc>,
@@ -360,6 +365,7 @@ pub struct Stream {
 impl Stream {
     fn new(
         id: String,
+        host: String,
         sport: Sport,
         feed_type: FeedType,
         game_date: DateTime<Utc>,
@@ -367,6 +373,7 @@ impl Stream {
     ) -> Self {
         Stream {
             id,
+            host,
             sport,
             feed_type,
             game_date,
@@ -380,7 +387,7 @@ impl Stream {
     pub fn host_link(&self, cdn: Cdn) -> String {
         format!(
             "{}/getM3U8.php?league={}&date={}&id={}&cdn={}",
-            HOST,
+            self.host,
             self.sport,
             self.selected_date.format("%Y-%m-%d"),
             self.id,

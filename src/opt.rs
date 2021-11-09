@@ -5,6 +5,8 @@ use isahc::http::Uri;
 use std::{path::PathBuf, str::FromStr};
 use structopt::{clap::AppSettings::DeriveDisplayOrder, StructOpt};
 
+const HOST: &str = "http://freesports.ddns.net";
+
 pub fn parse_opts() -> OutputType {
     let opts = Opt::from_args();
 
@@ -44,6 +46,9 @@ pub struct Opt {
     #[structopt(long, global = true)]
     /// Disables unavailable stream retry for `play`, `record`, and `cast` commands. Program will exit instead.
     pub disable_retry: bool,
+    #[structopt(long, global = true, default_value = HOST)]
+    /// Specify a host
+    pub host: String,
 }
 
 #[derive(StructOpt, Debug, PartialEq, Clone)]
