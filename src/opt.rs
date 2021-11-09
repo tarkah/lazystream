@@ -17,6 +17,7 @@ pub fn parse_opts() -> OutputType {
         Command::Record { .. } => OutputType::Record(opts),
         Command::Cast { .. } => OutputType::Cast(opts),
         Command::Completions { .. } => OutputType::Completions(opts),
+        Command::Host { .. } => OutputType::Host(opts.host),
     }
 }
 
@@ -104,6 +105,9 @@ pub enum Command {
         /// Target directory to save completions
         target: PathBuf,
     },
+    #[structopt(usage = "lazystream host [OPTIONS]")]
+    /// Print the host used by 'lazystream'
+    Host,
 }
 
 #[derive(StructOpt, Debug, PartialEq, Clone)]
@@ -326,6 +330,7 @@ pub enum OutputType {
     Record(Opt),
     Cast(Opt),
     Completions(Opt),
+    Host(String),
 }
 
 fn parse_date(src: &str) -> Result<NaiveDate, ParseError> {

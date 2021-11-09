@@ -27,6 +27,7 @@ fn main() {
         OutputType::Record(opts) => crate::streamlink::run(opts),
         OutputType::Cast(opts) => crate::streamlink::run(opts),
         OutputType::Completions(opts) => crate::completions::run(opts),
+        OutputType::Host(host) => println!("{}", host),
     }
 }
 
