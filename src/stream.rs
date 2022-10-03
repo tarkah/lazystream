@@ -48,23 +48,22 @@ impl LazyStream {
             let game_date = game.date;
             let home_team = teams
                 .iter()
-                .find(|team| team.id == game.teams.home.detail.id)
-                .unwrap();
+                .find(|team| team.id == game.teams.home.detail.id);
             let away_team = teams
                 .iter()
-                .find(|team| team.id == game.teams.away.detail.id)
-                .unwrap();
-
-            let game = Game::new(
-                opts.sport,
-                opts.host.clone(),
-                game_pk,
-                game_date,
-                date,
-                home_team.clone(),
-                away_team.clone(),
-            );
-            games.push(game);
+                .find(|team| team.id == game.teams.away.detail.id);
+            if let Some((home_team, away_team)) = home_team.zip(away_team) {
+                let game = Game::new(
+                    opts.sport,
+                    opts.host.clone(),
+                    game_pk,
+                    game_date,
+                    date,
+                    home_team.clone(),
+                    away_team.clone(),
+                );
+                games.push(game);
+            }
         }
         games.sort_by_key(|game| (game.game_date, game.away_team.name.clone()));
 
@@ -175,7 +174,7 @@ impl Game {
             let mut streams = BTreeMap::new();
             let game_content = self.game_content().await?;
 
-            if let Some(epg) = game_content.media.epg {
+            if let Some(epg) = game_content.media.and_then(|media| media.epg) {
                 for epg in epg {
                     if epg.title == "NHLTV" || epg.title == "MLBTV" {
                         if let Some(items) = epg.items {
